@@ -11,14 +11,14 @@
 [![Track: Unicorn](https://img.shields.io/badge/AMD%20Act%20II-Unicorn%20Track-ed1b2f.svg)]()
 [![ROCm](https://img.shields.io/badge/base-rocm%2Fdev--ubuntu--22.04-ed1b2f.svg)]()
 [![Reproducible](https://img.shields.io/badge/benchmarks-reproducible-3fb950.svg)]()
-[![Live demo](https://img.shields.io/badge/live%20demo-vault--demo.perseus.observer-3fb950.svg)](https://vault-demo.perseus.observer)
+[![Live demo](https://img.shields.io/badge/live%20demo-amd--demo.perseus.observer-3fb950.svg)](https://amd-demo.perseus.observer)
 
 **AMD Developer Hackathon: Act II — Unicorn (Open) Track.** Built on
 [Perseus Vault](https://github.com/Perseus-Computing-LLC/perseus-vault), a
 production, MIT-licensed memory engine (10★, v2.19.1). lablab project:
 [lablab.ai/…/perseus](https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus).
 
-> ### ▶ Try the live demo — **[vault-demo.perseus.observer](https://vault-demo.perseus.observer)**
+> ### ▶ Try the live demo — **[amd-demo.perseus.observer](https://amd-demo.perseus.observer)**
 > Teach the agent a fact, open a brand-new session, recall it, then run a decay tick —
 > the real SQLite + FTS5 engine (`webdemo/`) running **on the host CPU (0 bytes of GPU
 > HBM)**, alongside the projected MI300X economics table. No login, per-visitor sandbox.

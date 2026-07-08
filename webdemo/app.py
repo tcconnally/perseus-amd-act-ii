@@ -278,7 +278,7 @@ INDEX_HTML = r"""<!doctype html>
   <p class="foot">Same engine as the shipping product:
      <a href="https://github.com/Perseus-Computing-LLC/perseus-vault">perseus-vault</a> ·
      submission repo <a href="https://github.com/tcconnally/perseus-amd-act-ii">perseus-amd-act-ii</a> ·
-     <a href="https://youtu.be/HSrB0Y2b_Ag">video</a> · MIT.
+     <a href="https://github.com/tcconnally/perseus-amd-act-ii/blob/main/demo_video.mp4">video</a> · MIT.
      Per-visitor sandbox, auto-resets when idle.</p>
 </div>
 <script>
