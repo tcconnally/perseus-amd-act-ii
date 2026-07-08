@@ -156,6 +156,18 @@ Perseus Computing LLC (Wyoming)
 - [x] Runnable demo (`python3 src/agent_memory_demo.py`, stdlib-only, offline)
 - [x] Verifiable data with honest `data_source` tags; no projection shown as measured
 - [x] `.env.example` only — no real credentials committed
-- [ ] **Record demo video and paste the URL above**
-- [ ] Confirm the Unicorn Track is selected on the lablab form
-- [ ] Paste the cover image (`assets/thumbnail.png`)
+- [x] Demo video produced (`demo_video.mp4`, ~91s, AMD-specific; built by
+      `generate_video.py` + `narration.py`) — lablab hosts the file directly, so it is
+      uploaded to the Video Presentation field (not a URL)
+- [x] Slide deck (PDF) uploaded to the Slide Presentation field
+- [x] Cover image (`assets/thumbnail.png`) uploaded to the Cover Image field
+- [x] Unicorn (Open) Track selected on the lablab form
+- [x] Step 3 (Application) completed: GitHub repo URL; Demo Application Platform =
+      "Other"; Demo Application URL = repo (no hosted live app); Docker Image = "N/A"
+      (Unicorn Track, not Track 1/2); honest measured-vs-projection note in Additional
+      Information
+- [ ] **Final human check + click Submit on lablab before the Jul 11 deadline**
+
+> lablab submission form: https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus/submission
+> The Video Presentation field takes an uploaded file (it displays the clip inline), not
+> a YouTube/URL link — upload `demo_video.mp4` from the repo root.
