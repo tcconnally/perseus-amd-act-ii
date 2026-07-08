@@ -1,0 +1,331 @@
+"""
+Perseus Vault x AMD Instinct — live interactive demo.
+
+A tiny Flask app that wraps the SAME CPU-only engine the repo ships
+(src/perseus_vault_store.ReferenceStore: SQLite + FTS5 hybrid recall) so a visitor
+can, in their browser:
+
+  1. Teach an agent durable facts (Session 1).
+  2. Open a brand-new session (context cleared) and recall them (Session 2) —
+     proving memory survives the context window.
+  3. Run a decay tick and watch noise get archived while signal stays.
+
+Everything here runs on the host CPU — 0 bytes of GPU HBM — which is the whole AMD
+economics argument. The MI300X cost table shown alongside is a PROJECTION from
+published specs (labelled as such), never a measurement.
+
+Guardrails for a public demo: each visitor gets an isolated in-memory store keyed by
+a cookie; stores are capped, rate-limited, and auto-evicted when idle.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+import time
+import threading
+import uuid
+
+from flask import Flask, jsonify, request, make_response
+
+# Reuse the repo's real engine + economics (mounted at /app/src in the container).
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.insert(0, "/app/src")
+from perseus_vault_store import ReferenceStore  # noqa: E402
+import economics  # noqa: E402
+
+app = Flask(__name__)
+
+# --- per-visitor sandbox ----------------------------------------------------
+_LOCK = threading.Lock()
+_SESSIONS: dict[str, dict] = {}          # sid -> {store, last, count, hits[]}
+IDLE_TTL_SEC = 20 * 60
+MAX_SESSIONS = 300
+MAX_MEMORIES_PER_SID = 500
+MAX_TEXT = 500
+MAX_QUERY = 200
+RATE_MAX = 60                            # requests / RATE_WINDOW / sid
+RATE_WINDOW = 60.0
+
+
+def _reap(now: float) -> None:
+    dead = [s for s, v in _SESSIONS.items() if now - v["last"] > IDLE_TTL_SEC]
+    for s in dead:
+        try:
+            _SESSIONS[s]["store"].close()
+        except Exception:
+            pass
+        _SESSIONS.pop(s, None)
+    while len(_SESSIONS) > MAX_SESSIONS:
+        oldest = min(_SESSIONS, key=lambda s: _SESSIONS[s]["last"])
+        try:
+            _SESSIONS[oldest]["store"].close()
+        except Exception:
+            pass
+        _SESSIONS.pop(oldest, None)
+
+
+def _session(sid: str) -> dict:
+    now = time.time()
+    _reap(now)
+    v = _SESSIONS.get(sid)
+    if v is None:
+        v = {"store": ReferenceStore(":memory:"), "last": now,
+             "reqs": [], "seeded": False}
+        _SESSIONS[sid] = v
+    v["last"] = now
+    return v
+
+
+def _rate_ok(v: dict, now: float) -> bool:
+    v["reqs"] = [t for t in v["reqs"] if now - t < RATE_WINDOW]
+    if len(v["reqs"]) >= RATE_MAX:
+        return False
+    v["reqs"].append(now)
+    return True
+
+
+def _sid_from(req) -> str:
+    return req.cookies.get("pv_sid") or uuid.uuid4().hex
+
+
+def _hit_json(h) -> dict:
+    return {
+        "text": h.memory.text,
+        "category": h.memory.category,
+        "recall_count": h.memory.recall_count,
+        "rank": round(h.rank, 3),
+    }
+
+
+# --- API --------------------------------------------------------------------
+@app.route("/api/remember", methods=["POST"])
+def api_remember():
+    sid = _sid_from(request)
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()[:MAX_TEXT]
+    category = (data.get("category") or "fact").strip()[:60] or "fact"
+    if not text:
+        return _resp(sid, {"error": "empty text"}, 400)
+    with _LOCK:
+        v = _session(sid)
+        if not _rate_ok(v, time.time()):
+            return _resp(sid, {"error": "rate limited — slow down"}, 429)
+        if v["store"].count(include_archived=True) >= MAX_MEMORIES_PER_SID:
+            return _resp(sid, {"error": "demo store full — hit Reset"}, 409)
+        v["store"].remember(category, text)
+        v["store"].db.commit()
+        active = v["store"].count()
+    return _resp(sid, {"ok": True, "active": active})
+
+
+@app.route("/api/recall", methods=["POST"])
+def api_recall():
+    sid = _sid_from(request)
+    data = request.get_json(silent=True) or {}
+    query = (data.get("query") or "").strip()[:MAX_QUERY]
+    if not query:
+        return _resp(sid, {"error": "empty query"}, 400)
+    with _LOCK:
+        v = _session(sid)
+        if not _rate_ok(v, time.time()):
+            return _resp(sid, {"error": "rate limited — slow down"}, 429)
+        hits = [_hit_json(h) for h in v["store"].recall(query, k=5)]
+        active = v["store"].count()
+    return _resp(sid, {"ok": True, "hits": hits, "active": active})
+
+
+@app.route("/api/decay", methods=["POST"])
+def api_decay():
+    sid = _sid_from(request)
+    with _LOCK:
+        v = _session(sid)
+        if not _rate_ok(v, time.time()):
+            return _resp(sid, {"error": "rate limited — slow down"}, 429)
+        # Simulate the passage of ~90 idle days so the decay tick has visible effect
+        # in a live demo (real deployments run this on a schedule over real time).
+        archived = v["store"].decay(now=time.time() + 90 * 86400)
+        active = v["store"].count()
+        total = v["store"].count(include_archived=True)
+    return _resp(sid, {"ok": True, "archived": archived,
+                       "active": active, "archived_total": total - active})
+
+
+@app.route("/api/reset", methods=["POST"])
+def api_reset():
+    sid = _sid_from(request)
+    with _LOCK:
+        old = _SESSIONS.pop(sid, None)
+        if old:
+            try:
+                old["store"].close()
+            except Exception:
+                pass
+        _session(sid)
+    return _resp(sid, {"ok": True, "active": 0})
+
+
+@app.route("/api/economics")
+def api_economics():
+    rows = list(economics.economics_rows())
+    return jsonify({
+        "model": economics.MODEL_NAME,
+        "weights_gb": economics.MODEL_WEIGHTS_GB,
+        "kv_gb_per_seq": round(economics.KV_GB_PER_SEQ, 2),
+        "pv_rss_mb_per_agent": economics.PV_RSS_MB_PER_AGENT,
+        "pv_usd_per_agent_hr": round(economics.perseus_vault_cost_per_agent_hr(), 5),
+        "rows": rows,
+        "data_source": "projection",
+    })
+
+
+@app.route("/healthz")
+def healthz():
+    return jsonify({"ok": True, "sessions": len(_SESSIONS)})
+
+
+def _resp(sid: str, payload: dict, status: int = 200):
+    resp = make_response(jsonify(payload), status)
+    resp.set_cookie("pv_sid", sid, max_age=IDLE_TTL_SEC, samesite="Lax",
+                    secure=True, httponly=True)
+    return resp
+
+
+@app.route("/")
+def index():
+    return INDEX_HTML
+
+
+INDEX_HTML = r"""<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perseus Vault × AMD Instinct — live demo</title>
+<style>
+  :root{--bg:#0c0f14;--panel:#141a22;--edge:#232c38;--ink:#e6edf3;--mut:#8aa0b4;
+        --grn:#41d18a;--gold:#ffc230;--blue:#5aa9ff;--red:#ff6b6b}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  a{color:var(--blue)} .wrap{max-width:1080px;margin:0 auto;padding:26px 18px 60px}
+  h1{font-size:24px;margin:0 0 2px} .sub{color:var(--mut);margin:0 0 16px}
+  .banner{border:1px solid var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0;
+    color:var(--gold);background:rgba(255,194,48,.06);font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:16px}
+  .card h2{font-size:15px;margin:0 0 4px} .step{color:var(--blue);font-weight:700}
+  .hint{color:var(--mut);font-size:12.5px;margin:0 0 10px}
+  input,button{font:inherit} input[type=text]{width:100%;background:#0a0d12;color:var(--ink);
+    border:1px solid var(--edge);border-radius:7px;padding:9px 11px}
+  .row{display:flex;gap:8px;margin-top:8px} .row input{flex:1}
+  button{background:#1b2430;color:var(--ink);border:1px solid var(--edge);border-radius:7px;
+    padding:9px 13px;cursor:pointer} button:hover{border-color:var(--blue)}
+  button.go{background:var(--blue);color:#04121f;border-color:var(--blue);font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px}
+  .chip{font-size:12px;padding:5px 9px;border:1px dashed var(--edge);border-radius:20px;
+    color:var(--mut);cursor:pointer} .chip:hover{color:var(--ink);border-color:var(--blue)}
+  .log{background:#0a0d12;border:1px solid var(--edge);border-radius:7px;padding:10px;
+    margin-top:10px;min-height:34px;font-size:13px;white-space:pre-wrap}
+  .hit{border-left:3px solid var(--grn);padding:6px 10px;margin:7px 0;background:#0a0d12;border-radius:4px}
+  .hit .m{color:var(--mut);font-size:12px} .ok{color:var(--grn)} .warn{color:var(--red)}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px}
+  th,td{border-bottom:1px solid var(--edge);padding:6px 8px;text-align:right}
+  th:first-child,td:first-child{text-align:left} tr.mi td{color:var(--grn)}
+  .pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;
+    border:1px solid var(--edge);color:var(--mut)} .gpu0{color:var(--grn);border-color:var(--grn)}
+  .foot{color:var(--mut);font-size:12px;margin-top:22px;border-top:1px solid var(--edge);padding-top:12px}
+  .stat{color:var(--mut);font-size:12px;margin-top:8px}
+</style></head><body><div class="wrap">
+  <h1>Perseus Vault <span style="color:var(--mut)">×</span> AMD Instinct MI300X</h1>
+  <p class="sub">Encrypted, local-first agent memory — kept <b>off the GPU</b>. This live demo
+     runs the repo's real SQLite + FTS5 recall engine on the <b>host CPU</b>.</p>
+
+  <div class="banner">⚠︎ Honesty: recall &amp; footprint below are <b>measured live on this CPU</b>
+     (<span class="gpu0">0 bytes of GPU HBM</span>). The MI300X cost table is a
+     <b>projection</b> from published specs — not a measurement.</div>
+
+  <div class="grid">
+    <div class="card">
+      <h2><span class="step">Session 1</span> · teach the agent</h2>
+      <p class="hint">Store durable facts. Tap an example or type your own.</p>
+      <div class="chips" id="chips"></div>
+      <div class="row"><input id="mem" type="text" placeholder="e.g. Deploy target is us-east-1 on MI300X"
+        maxlength="500"><button class="go" onclick="remember()">Remember</button></div>
+      <div class="stat" id="stat">active memories: 0</div>
+      <div class="log" id="log1">nothing stored yet.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="step">Session 2</span> · new session, recall</h2>
+      <p class="hint"><button onclick="newSession()">↻ Start new session</button>
+         clears the on-screen context — the vault persists. Then recall.</p>
+      <div class="row"><input id="q" type="text" placeholder="e.g. where do we deploy?"
+        maxlength="200"><button class="go" onclick="recall()">Recall</button></div>
+      <div class="log" id="log2">start a new session, then ask something you taught.</div>
+      <div style="margin-top:10px"><button onclick="decay()">Run decay tick (age ~90d)</button>
+         <button onclick="reset()">Reset demo</button></div>
+      <div class="log" id="log3"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Why AMD: one card, many agents <span class="pill">projection · published-spec</span></h2>
+    <p class="hint" id="econhint">serving one 70B model in FP16; memory stays on CPU (0 HBM).</p>
+    <table id="econ"><thead><tr><th>Accelerator</th><th>HBM</th><th>Cards</th>
+      <th>Agents</th><th>$/GPU-hr</th><th>$/agent-hr</th></tr></thead><tbody></tbody></table>
+    <p class="stat" id="pvcost"></p>
+  </div>
+
+  <p class="foot">Same engine as the shipping product:
+     <a href="https://github.com/Perseus-Computing-LLC/perseus-vault">perseus-vault</a> ·
+     submission repo <a href="https://github.com/tcconnally/perseus-amd-act-ii">perseus-amd-act-ii</a> ·
+     <a href="https://youtu.be/HSrB0Y2b_Ag">video</a> · MIT.
+     Per-visitor sandbox, auto-resets when idle.</p>
+</div>
+<script>
+const EX=["Our deploy target is AWS us-east-1 on an MI300X.",
+ "The on-call rotation lead this week is Dana.",
+ "Perseus Vault keeps memory on the CPU, not the GPU.",
+ "Postgres is banned in this project; we use SQLite + FTS5.",
+ "The MI300X has 192 GB of HBM3."];
+const chips=document.getElementById('chips');
+EX.forEach(t=>{const c=document.createElement('span');c.className='chip';c.textContent=t;
+  c.onclick=()=>{document.getElementById('mem').value=t;remember();};chips.appendChild(c);});
+async function post(u,b){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(b||{})});return r.json();}
+function setStat(n){document.getElementById('stat').textContent='active memories: '+n;}
+async function remember(){const el=document.getElementById('mem');const t=el.value.trim();if(!t)return;
+  const d=await post('/api/remember',{text:t});const l=document.getElementById('log1');
+  if(d.error){l.innerHTML='<span class="warn">'+d.error+'</span>';return;}
+  setStat(d.active);el.value='';l.innerHTML='<span class="ok">stored ✓</span>  "'+t+'"';}
+function newSession(){document.getElementById('log2').innerHTML=
+  '<span class="ok">— new session —</span> context cleared. The vault still holds your facts. Now recall:';}
+async function recall(){const q=document.getElementById('q').value.trim();if(!q)return;
+  const d=await post('/api/recall',{query:q});const l=document.getElementById('log2');
+  if(d.error){l.innerHTML='<span class="warn">'+d.error+'</span>';return;}
+  if(!d.hits.length){l.innerHTML='no matching memory. Teach it in Session 1 first.';return;}
+  l.innerHTML='<span class="ok">recalled from the vault ('+d.active+' active):</span>'+
+   d.hits.map(h=>'<div class="hit">'+h.text+'<div class="m">['+h.category+'] recalls='+
+   h.recall_count+' · fused rank '+h.rank+'</div></div>').join('');}
+async function decay(){const d=await post('/api/decay',{});const l=document.getElementById('log3');
+  if(d.error){l.innerHTML='<span class="warn">'+d.error+'</span>';return;}
+  l.innerHTML='<span class="ok">decay tick:</span> archived '+d.archived+
+   ' faded memories; '+d.active+' kept active (nothing deleted — archive is auditable).';setStat(d.active);}
+async function reset(){await post('/api/reset',{});setStat(0);
+  document.getElementById('log1').textContent='nothing stored yet.';
+  document.getElementById('log2').textContent='start a new session, then ask something you taught.';
+  document.getElementById('log3').textContent='';}
+(async()=>{const e=await (await fetch('/api/economics')).json();
+  document.getElementById('econhint').textContent='serving '+e.model+
+   ' — weights '+e.weights_gb+' GB, KV '+e.kv_gb_per_seq+' GB/seq; memory on CPU (0 HBM).';
+  const tb=document.querySelector('#econ tbody');
+  e.rows.forEach(r=>{const tr=document.createElement('tr');if(r.gpu.includes('MI300X'))tr.className='mi';
+    tr.innerHTML='<td>'+r.gpu+'</td><td>'+r.hbm_gb+' GB</td><td>'+r.cards_for_weights+
+     '</td><td>'+r.concurrent_agents+'</td><td>$'+r.gpu_usd_per_hr+'</td><td>'+
+     (r.gpu_usd_per_agent_hr!=null?'$'+r.gpu_usd_per_agent_hr:'—')+'</td>';tb.appendChild(tr);});
+  document.getElementById('pvcost').textContent='Perseus Vault memory: ~$'+e.pv_usd_per_agent_hr+
+   '/agent-hr on the host CPU ('+e.pv_rss_mb_per_agent+' MB RSS/agent, 0 bytes HBM) — measured footprint.';})();
+</script></body></html>"""
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8080")))
