@@ -1,0 +1,4 @@
+# Normalize line endings to LF so the Dockerfile, shell, and Python behave
+# identically on Linux (the ROCm container) regardless of author OS.
+* text=auto eol=lf
+*.png binary

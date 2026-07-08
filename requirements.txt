@@ -1,0 +1,16 @@
+# Perseus Vault x AMD Instinct - Act II submission
+#
+# The demo and benchmarks (src/agent_memory_demo.py, src/benchmark.py) run on the
+# Python STANDARD LIBRARY ONLY (sqlite3 + FTS5, urllib). No third-party package is
+# required to reproduce every "measured" number in this repo. That is deliberate:
+# the memory layer has zero heavy dependencies, which is the whole point.
+#
+# The packages below are OPTIONAL and only used for the "nice to have" paths:
+
+# Real LLM inference on AMD Instinct via the Fireworks AI OpenAI-compatible API.
+# (The demo uses urllib directly, so this is only if you prefer the SDK.)
+openai>=1.30.0 ; python_version >= "3.9"
+
+# Regenerate assets/thumbnail.png from src (optional; a PNG is already committed).
+# Pillow is only needed if you want to rebuild the diagram.
+# pillow>=10.0.0

@@ -1,0 +1,25 @@
+# Secrets - never commit
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Local memory / benchmark artifacts
+*.db
+*.db-wal
+*.db-shm
+perseus-amd-demo.db*
+bench-*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
