@@ -107,7 +107,20 @@ https://github.com/tcconnally/perseus-amd-act-ii
 ```
 Built on the production engine: https://github.com/Perseus-Computing-LLC/perseus-vault
 
-## Field: Demo video  **[ACTION NEEDED — record & paste link]**
+## Field: Live demo (Demo Application URL)
+```
+https://amd-demo.perseus.observer
+```
+A hosted, clickable version of `webdemo/` — the repo's real SQLite + FTS5 recall
+engine running live on the **host CPU** (0 bytes of GPU HBM). Visitors teach the agent
+facts (Session 1), start a fresh session and recall them (Session 2), run a decay tick,
+and see the MI300X-vs-H100-vs-A100 economics table. Honest scope: the hosted instance
+runs the **memory engine only** — it makes no LLM call, so nothing on screen is a
+fabricated generation; the MI300X economics are clearly labelled `projection`. Each
+visitor gets an isolated, rate-limited, auto-evicted in-memory store. Served from a
+container (`--restart unless-stopped`) behind a Cloudflare tunnel.
+
+## Field: Demo video  **[DONE — file uploaded]**
 Suggested ≤ 3-minute script (all steps run from a clean clone; no fabricated output):
 1. `python3 src/agent_memory_demo.py` — narrate Session 1 (agent learns facts) → Session
    2 (new session, empty context, recalls from Perseus Vault, then answers) → LOAD
@@ -162,10 +175,12 @@ Perseus Computing LLC (Wyoming)
 - [x] Slide deck (PDF) uploaded to the Slide Presentation field
 - [x] Cover image (`assets/thumbnail.png`) uploaded to the Cover Image field
 - [x] Unicorn (Open) Track selected on the lablab form
-- [x] Step 3 (Application) completed: GitHub repo URL; Demo Application Platform =
-      "Other"; Demo Application URL = repo (no hosted live app); Docker Image = "N/A"
-      (Unicorn Track, not Track 1/2); honest measured-vs-projection note in Additional
-      Information
+- [x] Step 3 (Application) completed: GitHub repo URL; Docker Image = "N/A" (Unicorn
+      Track, not Track 1/2); honest measured-vs-projection note in Additional Information
+- [x] Live hosted demo deployed: https://amd-demo.perseus.observer (CPU-only memory
+      engine, per-visitor sandbox, smoke-tested over TLS end-to-end 2026-07-08)
+- [ ] **Update Demo Application URL on lablab Step 3 to https://amd-demo.perseus.observer**
+      (was pointing at the repo); keep Platform = "Other"
 - [ ] **Final human check + click Submit on lablab before the Jul 11 deadline**
 
 > lablab submission form: https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus/submission
