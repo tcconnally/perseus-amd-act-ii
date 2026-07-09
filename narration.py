@@ -3,7 +3,7 @@
 Numbers referenced here match docs/BENCHMARKS.md in the repo:
   - MI300X recall-under-serving (scene 4) -> §3a  data_source: measured (real MI300X)
   - recall/footprint  (scene 5) -> §1/§2  data_source: measured (AMD CPU reference)
-  - cost economics    (scene 6) -> §3a measured (MI300X) + §3b projection (cross-vendor)
+  - cost economics    (scene 6) -> §3a + §3b, MEASURED on both vendors
 """
 
 NARRATION = [
@@ -32,15 +32,15 @@ NARRATION = [
     "Recall scales, too. On an AMD CPU reference build, one hundred thousand memories "
     "recall near twelve milliseconds, the whole store just twenty six megabytes on "
     "disk, on the host, not in GPU memory. Measured, not projected.",
-    # Scene 6 (cost) — MEASURED MI300X point + cross-vendor PROJECTION
-    "The economics. Measured on the M I 300 X: one card holds fifteen point three "
-    "concurrent seventy two B agents, at fourteen cents per agent hour, validating "
-    "our projection. Cross vendor, from published specs, that is roughly eight times "
-    "cheaper per agent hour than a two H 100 deployment. Perseus Vault's memory stays "
-    "on the CPU, using none of that HBM.",
+    # Scene 6 (cost) — MEASURED on BOTH vendors (§3a MI300X + §3b 2×H100)
+    "The economics, measured on both sides. One M I 300 X holds fifteen point three "
+    "concurrent seventy two B agents at fourteen cents per agent hour. We rented two "
+    "H 100s and ran the same model, same V L L M: a single H 100 cannot load it at "
+    "all, and the pair's best case is five agents at a dollar sixty eight. That is "
+    "eleven point seven times cheaper per agent on the M I 300 X. Measured, not "
+    "projected. Perseus Vault's memory stays on the CPU, using none of that HBM.",
     # Scene 7 (closing)
-    "Perseus Vault, on AMD Instinct. Concurrency, cost per agent hour, and recall "
-    "under load are measured on a real M I 300 X; cross vendor comparisons are "
-    "projections from published specs, clearly labelled. Code and full methodology "
-    "are in the repository below.",
+    "Perseus Vault, on AMD Instinct. Concurrency, cost per agent hour, recall under "
+    "load, and the two H 100 comparison are all measured, and all reproduce from the "
+    "repository below with one command.",
 ]

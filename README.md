@@ -23,8 +23,8 @@ and the MCP registry), not a weekend build. lablab project:
 > Teach the agent a fact, open a brand-new session, and recall it — then watch an
 > **open-weight LLM (gpt-oss-120b) answer live via the Fireworks AI API** using *only*
 > what it recalled. Recall + footprint run on the **host CPU (0 bytes of GPU HBM)**;
-> the demo's cross-vendor economics table is a projection (the MI300X point itself is
-> now measured — see the banner below). Run a decay tick too. No login,
+> the demo's cross-vendor economics table shows the projection model (MI300X and
+> 2×H100 are now both measured — see the banner below). Run a decay tick too. No login,
 > per-visitor sandbox, daily budget cap on inference.
 >
 > <sub>Fireworks AI is this hackathon's designated inference partner — the
@@ -45,8 +45,10 @@ and the MCP registry), not a weekend build. lablab project:
 > the host CPU moved **±0.6% (median of 6 runs, 18.7 → 18.8 ms p50)**. The memory layer
 > steals ~zero inference cycles, proven under real load
 > ([BENCHMARKS §3a](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)).
-> Cross-accelerator (H100/A100) comparisons remain a `projection` (we rented only
-> MI300X). Every number in this repo is tagged with a `data_source`:
+> We then rented **2× H100 SXM** and measured the cross-vendor claim too: best-case
+> 5.0 concurrent agents at $1.68/agent-hr vs the MI300X's 15.3 at $0.143 —
+> **11.7× measured-vs-measured** (a single H100 cannot load the model at all). Only
+> the A100 row remains a `projection`. Every number in this repo is tagged with a `data_source`:
 > **`measured`** (timed live, reproducible now), **`published-spec`** (vendor
 > datasheet / cloud price list, cited below), or **`projection`** (derived from
 > published-spec inputs with stated assumptions). **No projected number is presented
@@ -143,26 +145,26 @@ FTS5 recall **17.0 ms p50 / 19.4 ms p99** @100K; bulk insert **98,732 entities/s
 | 10,000  | 2.61  | — |
 | 100,000 | 25.95 | ~85 |
 
-### One accelerator serves N agents — `measured` on MI300X, `projection` cross-vendor
+### One accelerator serves N agents — `measured` on MI300X **and** 2×H100
 
-**Measured on a real MI300X (2026-07-09,
-[BENCHMARKS §3a](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)):**
-serving Qwen2.5-72B bf16 on one card via vLLM/ROCm → **15.3 concurrent 8K-token
-agents**, **$0.143/agent-hour** at $2.19/GPU-hr — validating the projection below.
+**Measured on both sides (2026-07-09, same model, same vLLM 0.19.1, n=3 medians —
+[BENCHMARKS §3a–3b](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)):**
 
-The cross-accelerator comparison models Llama-3.1-70B (FP16, ~141 GB) with 8K-token
-KV cache (~2.5 GB/seq) from published specs (`projection`; we rented only MI300X):
+| Serving Qwen2.5-72B bf16 | 1× MI300X | 2× H100 SXM (best case) |
+|---|---|---|
+| Holds the model | ✅ one card, 38 GiB KV spare | ❌ one card **can't load it**; two required |
+| Concurrent 8K agents | **15.3** (standard settings) | **5.0** (eager-only, 97% util redline) |
+| **GPU $/agent-hour** | **$0.143** | **$1.68** |
+| $ / 1M output tokens | **$0.92** | $3.42 |
 
-| Accelerator | Cards for weights | Concurrent agents | GPU $/hr | **GPU $/agent-hr** |
-|---|---|---|---|---|
-| **AMD Instinct MI300X** | **1** | **~20** | $2.72 | **$0.133** |
-| NVIDIA H100 SXM | 2 | ~8 | $7.86 | $1.034 |
-| NVIDIA A100 80GB SXM | 2 | ~8 | $3.60 | $0.474 |
-
-The MI300X fits a 70B model on **one** card and has the most HBM left for concurrent
-sessions → **~7.8× lower GPU $/agent-hour than H100** for this workload. Perseus Vault
-memory runs on the CPU (~$0.0004/agent-hr ≈ 0.3% of the agent's cost) and uses **0 bytes
-of HBM**. Reproduce: `python3 src/economics.py`.
+**11.7× lower $/agent-hour and 3.7× lower $/token — measured, not projected.** At the
+*identical* configuration the H100 pair serves **zero** 8K requests (KV exhausted); its
+5.0 figure is the best case that boots. (H100 does win per-stream decode latency, 39 vs
+83 ms TPOT — stated plainly.) The A100 row of the old comparison remains a `projection`
+(~$0.47/agent-hr; we did not rent A100s). Perseus Vault memory runs on the CPU
+(~$0.0004/agent-hr ≈ 0.3% of the agent's cost) and uses **0 bytes of HBM**. Reproduce:
+`python3 src/economics.py` (projection model) + [BENCHMARKS §3a–3b](docs/BENCHMARKS.md)
+(measured runs, exact commands).
 
 ## Quick start
 
@@ -213,8 +215,11 @@ price lists:
   ~$3.93; A100 80GB ~$1.80. Sources: cloud-GPU price trackers
   ([getdeploying](https://getdeploying.com/reference/cloud-gpu),
   [thundercompute](https://www.thundercompute.com),
-  [gpucost.org](https://gpucost.org)), July 2026. Spot prices vary; at a findable
-  ~$2.85/hr H100 the headline ratio is ~5.6× instead of ~7.8×.
+  [gpucost.org](https://gpucost.org)), July 2026. Spot prices vary — but the headline
+  cross-vendor ratio no longer depends on tracker prices: it is **measured** at the
+  rates we actually paid ($2.19 MI300X, $8.38 2×H100 → 11.7×,
+  [BENCHMARKS §3b](docs/BENCHMARKS.md)). Even at a findable ~$2.85/hr per H100
+  ($5.70 for the pair), the measured agent ceilings give $1.14 vs $0.143 → **8.0×**.
 - **Model assumption:** Llama-3.1-70B, FP16 weights ~141 GB; KV cache per 8K-token
   sequence ~2.5 GB (80 layers, 8 GQA KV heads, head_dim 128, fp16). Derivation lives in
   `src/economics.py`.
@@ -300,8 +305,8 @@ Most hackathon entries are born this week. Perseus Vault is a real product we br
 Agent memory is a real, growing market (Mem0, Letta, Zep). Today those stateful-agent
 workloads default to NVIDIA. Perseus Vault removes the reason they'd have to: by keeping
 memory **off the accelerator**, it makes the MI300X's 192 GB HBM3 the cheapest place to
-run a *fleet* of durable agents (**measured $0.143/agent-hr on a real MI300X; ~7.8×
-under a 2×H100 deployment in the cross-vendor projection**,
+run a *fleet* of durable agents (**measured $0.143/agent-hr on a real MI300X — 11.7×
+under a measured 2×H100 baseline**,
 see [benchmarks](docs/BENCHMARKS.md)). And because the memory is local-first, **air-gap
 mode loses nothing** — the regulated buyers who most need on-prem get the *full* product,
 not a degraded one (many stateful-agent tools quietly disable their best features

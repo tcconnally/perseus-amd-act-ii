@@ -158,19 +158,18 @@ scenes = [
         ("  BM25 + recency over SQLite FTS5 — on the HOST CPU,", DIM_COLOR),
         ("  0 bytes of GPU HBM.  Reproduce: python src/benchmark.py", DIM_COLOR),
     ]),
-    # 6 — cost economics — §3a MEASURED MI300X point + §3b cross-vendor projection
-    dict(badge="data_source: measured (MI300X) + projection (cross-vendor)", lines=[
-        ("# Cost economics  —  one card, many agents", TITLE_COLOR),
+    # 6 — cost economics — MEASURED on BOTH vendors (§3a MI300X + §3b 2×H100)
+    dict(badge="data_source: measured (MI300X + 2xH100, same model, same vLLM)", lines=[
+        ("# Cost economics — measured on BOTH vendors", TITLE_COLOR),
         ("", None),
-        (">>> MEASURED on MI300X (Qwen2.5-72B bf16, vLLM/ROCm):", HIGHLIGHT_COLOR),
-        (">>> 15.3 concurrent agents  →  $0.143 / agent-hour", HIGHLIGHT_COLOR),
+        ("  Qwen2.5-72B bf16 · vLLM 0.19.1 · 8K-token agents", DIM_COLOR),
         ("", None),
-        ("  Cross-vendor projection (Llama-3.1-70B FP16, published specs):", DIM_COLOR),
-        ("  MI300X        192 GB     20.4          $0.133", (120, 255, 160)),
-        ("  A100 80GB      80 GB      7.6          $0.474", OUTPUT_COLOR),
-        ("  H100 SXM       80 GB      7.6          $1.034", OUTPUT_COLOR),
+        ("  1x MI300X     holds it, 38 GiB spare   15.3 agents   $0.143/agent-hr", (120, 255, 160)),
+        ("  1x H100       CANNOT LOAD THE MODEL      —              —", OUTPUT_COLOR),
+        ("  2x H100       best case (eager, 97%)    5.0 agents   $1.68/agent-hr", OUTPUT_COLOR),
         ("", None),
-        ("  1 card fits a 70B → ~8x cheaper/agent-hr than 2xH100 (projection)", DIM_COLOR),
+        (">>> 11.7x cheaper per agent — measured, not projected", HIGHLIGHT_COLOR),
+        ("  ($0.92 vs $3.42 per 1M output tokens · A100 row remains projection)", DIM_COLOR),
     ]),
     # 7 — closing
     dict(lines=[
@@ -179,8 +178,8 @@ scenes = [
         ("", None),
         ("  github.com/tcconnally/perseus-amd-act-ii", HIGHLIGHT_COLOR),
         ("", None),
-        ("  Agents, $/agent-hr, recall-under-load = MEASURED on a real MI300X.", (255, 140, 90)),
-        ("  Cross-vendor cost = projection.  Reproduce: src/amd_live_benchmark.py", (255, 140, 90)),
+        ("  Agents, $/agent-hr, recall-under-load, and the 2xH100", (255, 140, 90)),
+        ("  comparison = ALL MEASURED.  Reproduce: src/amd_live_benchmark.py", (255, 140, 90)),
     ]),
 ]
 

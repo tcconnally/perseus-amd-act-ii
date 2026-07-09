@@ -72,11 +72,12 @@ the demo prints that warning on every run.
 - *Measured (CPU, reproducible now):* recall p50 scales from 0.20 ms @1K to 11.87 ms
   @100K; the shipping Rust engine does FTS5 recall in 17 ms p50 @100K and bulk-inserts
   98,732 entities/s; a 100K-memory agent is ~85 MB RAM + ~45 MB disk.
-- *Projection from published specs:* the cross-accelerator comparison — serving
-  Llama-3.1-70B FP16, the MI300X's 192 GB HBM3 fits the model on ONE card where
-  H100/A100 need two, **~7.8× cheaper per agent-hour than a 2×H100 deployment** —
-  while Perseus Vault memory costs ~$0.0004/agent-hour on the CPU and consumes
-  0 bytes of HBM. (H100/A100 rows are projection; we rented only MI300X.)
+- *Measured cross-vendor (2× H100 SXM rented, same model + vLLM version):* a single
+  H100 **cannot load** the 72B at all; the pair, at its best-boot config (97% util,
+  eager-only), serves **5.0 concurrent 8K agents at $1.68/agent-hour** vs the
+  MI300X's 15.3 at $0.143 — **11.7× measured-vs-measured** (and $3.42 vs $0.92 per
+  1M output tokens). Perseus Vault memory costs ~$0.0004/agent-hour on the CPU and
+  consumes 0 bytes of HBM. (Only the A100 row remains a projection.)
 
 **Why it's a Unicorn.** Agent memory is a real, growing market (Mem0, Letta, Zep) — but
 every incumbent is cloud- or vector-DB-bound. Perseus Vault is the only memory engine
@@ -185,9 +186,10 @@ Perseus Computing LLC (Wyoming)
 1. DONE since first submission: rented real MI300X time and measured the core claims
    (recall under saturated MI300X inference ±0.6%; concurrent-agent ceiling 15.3;
    $0.143/agent-hour; sustained 658 output tok/s / peak 1,088 → $0.92 per 1M output
-   tokens at retail rental, untuned bf16). Next: a measured 2×H100 baseline to convert
-   the cross-vendor row from projection to measured-vs-measured, then FP8/AITER tuning
-   to push the measured $/token floor down.
+   tokens at retail rental, untuned bf16; PLUS a measured 2×H100 baseline — single
+   H100 can't load the model, the pair's best case is 5.0 agents at $1.68/agent-hr →
+   11.7× measured-vs-measured). Next: FP8/AITER tuning to push the measured $/token
+   floor down, and an A100 baseline to retire the last projection row.
 2. Ship a ready-to-deploy "MI300X + Perseus Vault" agent memory reference stack
    (compose file + vLLM/ROCm serving + N per-agent encrypted stores).
 3. Prototype an optional ROCm/HIP dense re-rank offload for hybrid recall and quantify
