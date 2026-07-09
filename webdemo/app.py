@@ -108,8 +108,8 @@ FIREWORKS_API_KEY = os.environ.get("FIREWORKS_API_KEY", "")
 FIREWORKS_MODEL = os.environ.get("FIREWORKS_MODEL",
                                  "accounts/fireworks/models/gpt-oss-120b")
 FW_MAX_TOKENS = int(os.environ.get("FW_MAX_TOKENS", "160"))
-FW_DAILY_CALLS = int(os.environ.get("FW_DAILY_CALLS", "800"))
-FW_TOTAL_CALLS = int(os.environ.get("FW_TOTAL_CALLS", "8000"))
+FW_DAILY_CALLS = int(os.environ.get("FW_DAILY_CALLS", "5000"))
+FW_TOTAL_CALLS = int(os.environ.get("FW_TOTAL_CALLS", "40000"))
 _BUDGET = {"day": "", "calls": 0, "total": 0}
 _BUDGET_LOCK = threading.Lock()
 
@@ -157,7 +157,7 @@ def infer(query: str, grounding: str):
         text = "Grounded in memory: " + " ".join(facts[:2])
     else:
         text = "I have no memory matching that yet - teach me a fact first."
-    return text, "offline composition (no LLM - key unset or daily budget cap reached)", False
+    return text, "memory-grounded composition (live AMD inference paused by the demo's budget guard)", False
 
 
 # --- API --------------------------------------------------------------------

@@ -25,6 +25,10 @@ and the MCP registry), not a weekend build. lablab project:
 > answer using *only* what it recalled. Recall + footprint run on the **host CPU (0 bytes
 > of GPU HBM)**; the MI300X economics table is a projection. Run a decay tick too. No
 > login, per-visitor sandbox, daily budget cap on inference.
+>
+> <sub>Inference is served on AMD hardware via Fireworks AI — the hackathon's AMD-hosted
+> inference provider ([Fireworks×AMD Instinct partnership](https://fireworks.ai/blog/fireworks-amd-ai-infrastructure-partnership)).
+> The memory layer never touches the GPU regardless.</sub>
 
 > ### ⚠️ Honesty banner (please read)
 > Cloud credits did not arrive before the July 11 deadline, so we do **not** have
