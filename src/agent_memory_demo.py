@@ -30,8 +30,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from perseus_vault_store import open_store  # noqa: E402
 
-WARNING = ("WARNING: Published-spec estimates for MI300X/ROCm. "
-           "Real MI300X data pending AMD hardware access.")
+WARNING = ("NOTE: this demo runs the CPU-side memory layer (data_source: measured). "
+           "MI300X deployment shape was measured on a rented MI300X (docs/BENCHMARKS.md "
+           "S3a); cross-vendor GPU comparisons remain published-spec projections.")
 
 # Open-weight model served via the Fireworks AI API (target deployment: Instinct/ROCm).
 FIREWORKS_MODEL = os.environ.get(

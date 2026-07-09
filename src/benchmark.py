@@ -28,8 +28,10 @@ from economics import (  # noqa: E402
 from perseus_vault_store import ReferenceStore  # noqa: E402
 
 WARNING = (
-    "WARNING: GPU/MI300X figures in this report are PUBLISHED-SPEC estimates and "
-    "projections, not measurements. Real MI300X data pending AMD hardware access."
+    "NOTE: the GPU table below is the cross-vendor PROJECTION from published-spec "
+    "inputs. The MI300X deployment shape itself was measured on a rented MI300X "
+    "(15.3 agents, $0.143/agent-hr; docs/BENCHMARKS.md S3a). CPU rows here are "
+    "measured live on this machine."
 )
 
 CORPUS_TEMPLATES = [
