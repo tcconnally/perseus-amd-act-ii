@@ -19,9 +19,11 @@ production, MIT-licensed memory engine (10★, v2.19.1). lablab project:
 [lablab.ai/…/perseus](https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus).
 
 > ### ▶ Try the live demo — **[amd-demo.perseus.observer](https://amd-demo.perseus.observer)**
-> Teach the agent a fact, open a brand-new session, recall it, then run a decay tick —
-> the real SQLite + FTS5 engine (`webdemo/`) running **on the host CPU (0 bytes of GPU
-> HBM)**, alongside the projected MI300X economics table. No login, per-visitor sandbox.
+> Teach the agent a fact, open a brand-new session, and recall it — then watch an
+> **open-weight LLM (gpt-oss-120b) served on AMD Instinct via the Fireworks AI API**
+> answer using *only* what it recalled. Recall + footprint run on the **host CPU (0 bytes
+> of GPU HBM)**; the MI300X economics table is a projection. Run a decay tick too. No
+> login, per-visitor sandbox, daily budget cap on inference.
 
 > ### ⚠️ Honesty banner (please read)
 > Cloud credits did not arrive before the July 11 deadline, so we do **not** have

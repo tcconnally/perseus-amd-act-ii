@@ -113,12 +113,15 @@ https://amd-demo.perseus.observer
 ```
 A hosted, clickable version of `webdemo/` — the repo's real SQLite + FTS5 recall
 engine running live on the **host CPU** (0 bytes of GPU HBM). Visitors teach the agent
-facts (Session 1), start a fresh session and recall them (Session 2), run a decay tick,
-and see the MI300X-vs-H100-vs-A100 economics table. Honest scope: the hosted instance
-runs the **memory engine only** — it makes no LLM call, so nothing on screen is a
-fabricated generation; the MI300X economics are clearly labelled `projection`. Each
-visitor gets an isolated, rate-limited, auto-evicted in-memory store. Served from a
-container (`--restart unless-stopped`) behind a Cloudflare tunnel.
+facts (Session 1), start a fresh session and recall them (Session 2), then an
+**open-weight LLM (gpt-oss-120b) served on AMD Instinct via the Fireworks AI API**
+answers using only the recalled facts — the full recall→infer loop, live on AMD. A
+decay tick and the MI300X-vs-H100-vs-A100 economics table round it out. Honest scope:
+recall/footprint are measured on CPU; the LLM answer is real inference on AMD (with a
+per-day budget cap; it falls back to a labelled memory-grounded composition when the
+cap is hit — never a fabricated generation); the MI300X economics are `projection`.
+Each visitor gets an isolated, rate-limited, auto-evicted store. Served from a
+container (`--restart unless-stopped`, key via `--env-file`) behind a Cloudflare tunnel.
 
 ## Field: Demo video  **[DONE — file uploaded]**
 Suggested ≤ 3-minute script (all steps run from a clean clone; no fabricated output):
