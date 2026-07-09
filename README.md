@@ -68,6 +68,12 @@ On an AMD Instinct MI300X, that last point is the whole game. Its **192 GB of HB
 the scarce resource. Every gigabyte spent storing what the agent *knows* is a gigabyte
 not serving tokens.
 
+**Two markets feel this hardest.** Teams **bleeding tokens** re-feeding the same context
+into every session; and **regulated orgs** — finance, defense, healthcare, the ones
+already banning cloud AI tools — that legally *cannot* send agent memory to a cloud API
+at all. A vector-DB-in-the-cloud serves neither well. An encrypted, local-first,
+off-the-GPU memory layer serves both.
+
 ## Solution
 
 **Perseus Vault** is a single Rust binary that gives an agent durable memory over the
@@ -279,9 +285,11 @@ Agent memory is a real, growing market (Mem0, Letta, Zep). Today those stateful-
 workloads default to NVIDIA. Perseus Vault removes the reason they'd have to: by keeping
 memory **off the accelerator**, it makes the MI300X's 192 GB HBM3 the cheapest place to
 run a *fleet* of durable agents (**~$0.13/agent-hr — ~7.8× under a 2×H100 deployment**,
-see [benchmarks](docs/BENCHMARKS.md)). In one line: **Perseus Vault turns AMD Instinct
-into the economical home for the agent economy** — an adoption wedge for Instinct, not
-just another memory tool.
+see [benchmarks](docs/BENCHMARKS.md)). And because the memory is local-first, **air-gap
+mode loses nothing** — the regulated buyers who most need on-prem get the *full* product,
+not a degraded one (many stateful-agent tools quietly disable their best features
+offline; ours don't). In one line: **Perseus Vault turns AMD Instinct into the economical
+home for the agent economy** — an adoption wedge for Instinct, not just another memory tool.
 
 ## About
 
