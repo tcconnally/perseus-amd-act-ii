@@ -8,9 +8,9 @@ and muxed with the voiceover via ffmpeg.
 Adapted from the proven pipeline in
 github.com/tcconnally/perseus-vault-hackathon/generate_video.py.
 
-HONESTY: every benchmark/cost frame renders "data_source: published-spec
-estimate"; the closing frame states the estimate caveat. The tables here match
-BENCHMARKS.md exactly.
+HONESTY: every benchmark/cost frame renders an on-screen data_source badge
+(measured vs projection); the closing frame states the caveat. The tables here
+match BENCHMARKS.md exactly.
 """
 from PIL import Image, ImageDraw, ImageFont
 import subprocess
@@ -132,16 +132,17 @@ scenes = [
         (">>> recalled across session boundary:", HIGHLIGHT_COLOR),
         (">>> \"deploy target: MI300X, ROCm 7\"", HIGHLIGHT_COLOR),
     ]),
-    # 4 — MEASURED on a real MI300X (the hero) — docs/BENCHMARKS.md §1
+    # 4 — MEASURED on a real MI300X (the hero) — docs/BENCHMARKS.md §3a
     dict(badge="data_source: measured (real AMD Instinct MI300X)", lines=[
         ("# Measured on a real MI300X: recall vs a saturated GPU", TITLE_COLOR),
+        ("  Qwen2.5-72B bf16 on vLLM 0.19.1 / ROCm 7.13 — real serving load", DIM_COLOR),
         ("", None),
-        ("  MI300X utilization            Recall p50 (host CPU)", HIGHLIGHT_COLOR),
-        ("  -----------------            --------------------", DIM_COLOR),
-        ("  idle  (0%)                    19.96 ms", OUTPUT_COLOR),
-        ("  saturated (100%, 97 TFLOPS)   20.08 ms", (120, 255, 160)),
+        ("  MI300X state                  Recall p50 (host CPU)", HIGHLIGHT_COLOR),
+        ("  ------------                  --------------------", DIM_COLOR),
+        ("  idle                          18.7 ms", OUTPUT_COLOR),
+        ("  saturated serving the 72B     18.8 ms  (±0.6% median, 6 runs)", (120, 255, 160)),
         ("", None),
-        ("  recall moved +0.6% while the GPU ran flat-out", HIGHLIGHT_COLOR),
+        ("  recall held flat while the GPU served flat-out", HIGHLIGHT_COLOR),
         ("  → CPU memory layer steals ~0 inference cycles", DIM_COLOR),
     ]),
     # 5 — recall throughput + footprint — docs/BENCHMARKS.md §1/§2 (AMD CPU reference)
@@ -157,18 +158,19 @@ scenes = [
         ("  BM25 + recency over SQLite FTS5 — on the HOST CPU,", DIM_COLOR),
         ("  0 bytes of GPU HBM.  Reproduce: python src/benchmark.py", DIM_COLOR),
     ]),
-    # 6 — cost economics — docs/BENCHMARKS.md §3 (PROJECTION)
-    dict(badge="data_source: projection (published-spec inputs)", lines=[
-        ("# Cost economics  —  serve Llama-3.1-70B FP16", TITLE_COLOR),
+    # 6 — cost economics — §3a MEASURED MI300X point + §3b cross-vendor projection
+    dict(badge="data_source: measured (MI300X) + projection (cross-vendor)", lines=[
+        ("# Cost economics  —  one card, many agents", TITLE_COLOR),
         ("", None),
-        ("  Accelerator   HBM      Agents   GPU $/agent-hr", HIGHLIGHT_COLOR),
-        ("  -----------   ------   ------   --------------", DIM_COLOR),
+        (">>> MEASURED on MI300X (Qwen2.5-72B bf16, vLLM/ROCm):", HIGHLIGHT_COLOR),
+        (">>> 15.3 concurrent agents  →  $0.143 / agent-hour", HIGHLIGHT_COLOR),
+        ("", None),
+        ("  Cross-vendor projection (Llama-3.1-70B FP16, published specs):", DIM_COLOR),
         ("  MI300X        192 GB     20.4          $0.133", (120, 255, 160)),
         ("  A100 80GB      80 GB      7.6          $0.474", OUTPUT_COLOR),
         ("  H100 SXM       80 GB      7.6          $1.034", OUTPUT_COLOR),
         ("", None),
-        ("  1 card fits 70B → most HBM left for agents.", DIM_COLOR),
-        ("  ~8x cheaper/agent than H100.  python src/economics.py", DIM_COLOR),
+        ("  1 card fits a 70B → ~8x cheaper/agent-hr than 2xH100 (projection)", DIM_COLOR),
     ]),
     # 7 — closing
     dict(lines=[
@@ -177,8 +179,8 @@ scenes = [
         ("", None),
         ("  github.com/tcconnally/perseus-amd-act-ii", HIGHLIGHT_COLOR),
         ("", None),
-        ("  Recall = MEASURED on a real MI300X.  Cost = projection", (255, 140, 90)),
-        ("  (published-spec).  Reproduce: python src/amd_live_benchmark.py", (255, 140, 90)),
+        ("  Agents, $/agent-hr, recall-under-load = MEASURED on a real MI300X.", (255, 140, 90)),
+        ("  Cross-vendor cost = projection.  Reproduce: src/amd_live_benchmark.py", (255, 140, 90)),
     ]),
 ]
 
