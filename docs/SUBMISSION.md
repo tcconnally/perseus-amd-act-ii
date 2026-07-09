@@ -19,7 +19,7 @@ Perseus Vault × AMD Instinct — Encrypted Agent Memory That Stays Off the GPU
 ## Field: Tagline / Short description (one line)
 ```
 Persistent, encrypted memory for AI agents that keeps 100% of MI300X HBM free for
-inference — no embeddings, no vector DB, ~$0.13 per agent-hour.
+inference — no embeddings, no vector DB, measured $0.14 per agent-hour on a real MI300X.
 ```
 
 ## Field: Track / Category
@@ -59,18 +59,24 @@ latency low under a burst of load, and runs a decay tick that ages noise into an
 quality survives as the store grows. The whole thing is containerized on a ROCm base
 image and ships with a reproducible benchmark harness.
 
-**Verifiable data (honestly labelled).** We did not get MI300X cloud credits before the
-deadline, so we drew a hard line: every number is tagged `measured`, `published-spec`,
-or `projection`, and no projection is ever shown as a measurement — the demo prints that
-warning on every run.
+**Verifiable data, honestly labelled.** Every number is tagged `measured`,
+`published-spec`, or `projection`, and no projection is ever shown as a measurement —
+the demo prints that warning on every run.
 
-- *Measured (reproducible now):* recall p50 scales from 0.20 ms @1K to 11.87 ms @100K;
-  the shipping Rust engine does FTS5 recall in 17 ms p50 @100K and bulk-inserts 98,732
-  entities/s; a 100K-memory agent is ~85 MB RAM + ~45 MB disk.
-- *Projection from published specs:* serving Llama-3.1-70B, the MI300X's 192 GB HBM3
-  fits the model on ONE card and holds ~20 concurrent agents at **~$0.13/agent-hour —
-  about 7.8× cheaper than a 2×H100 deployment** for the same workload — while Perseus
-  Vault memory costs ~$0.0004/agent-hour on the CPU and consumes 0 bytes of HBM.
+- *Measured on a real AMD Instinct MI300X (rented, reproducible from the repo):*
+  serving **Qwen2.5-72B bf16 on vLLM 0.19.1/ROCm 7.13** (host AMD EPYC 9474F), one
+  card holds **15.3 concurrent 8K-token agents at $0.143/agent-hour** (validating our
+  $0.133 projection) — and with the MI300X **saturated serving the 72B**, Perseus
+  Vault recall on the host CPU moved just **±0.6% (median of 6 runs, 18.7→18.8 ms p50
+  @100K)**: the memory layer steals ~zero inference cycles, proven under real load.
+- *Measured (CPU, reproducible now):* recall p50 scales from 0.20 ms @1K to 11.87 ms
+  @100K; the shipping Rust engine does FTS5 recall in 17 ms p50 @100K and bulk-inserts
+  98,732 entities/s; a 100K-memory agent is ~85 MB RAM + ~45 MB disk.
+- *Projection from published specs:* the cross-accelerator comparison — serving
+  Llama-3.1-70B FP16, the MI300X's 192 GB HBM3 fits the model on ONE card where
+  H100/A100 need two, **~7.8× cheaper per agent-hour than a 2×H100 deployment** —
+  while Perseus Vault memory costs ~$0.0004/agent-hour on the CPU and consumes
+  0 bytes of HBM. (H100/A100 rows are projection; we rented only MI300X.)
 
 **Why it's a Unicorn.** Agent memory is a real, growing market (Mem0, Letta, Zep) — but
 every incumbent is cloud- or vector-DB-bound. Perseus Vault is the only memory engine
@@ -100,11 +106,16 @@ real product *to* AMD — that's why the memory layer is production-grade, not a
 
 ## Field: How did you use AMD products / platforms?
 
-- **AMD Instinct MI300X** is the target inference accelerator. The container is built
-  `FROM rocm/dev-ubuntu-22.04:6.2` and is ready to serve an open-weight model on an
-  Instinct GPU the moment one is attached (`--device=/dev/kfd --device=/dev/dri`). Our
-  entire economic thesis is built around the MI300X's 192 GB HBM3 advantage — it fits a
-  70B model on one card where H100/A100 need two.
+- **AMD Instinct MI300X — rented and measured.** We rented real MI300X nodes and
+  measured the thesis end-to-end: served Qwen2.5-72B bf16 on **vLLM 0.19.1 + ROCm
+  7.13** (host AMD EPYC 9474F) → 15.3 concurrent agents/card at $0.143/agent-hour,
+  and proved recall on the host CPU is unaffected (±0.6%) while the accelerator is
+  saturated — both under a synthetic 100%-util matmul (97.4 TFLOPS FP16) and under
+  the real 72B serving load. Every run reproduces from scripts in the repo. The
+  container is built `FROM rocm/dev-ubuntu-22.04:6.2` and serves on an Instinct GPU
+  the moment one is attached (`--device=/dev/kfd --device=/dev/dri`). Our entire
+  economic thesis is built around the MI300X's 192 GB HBM3 advantage — it fits a
+  70B-class model on one card where H100/A100 need two.
 - **ROCm** is the software stack the container targets for GPU inference (via
   vLLM/Fireworks), and it's the runtime we'd use to prototype offloading Perseus Vault's
   optional dense re-rank to an idle GPU slice.
@@ -114,8 +125,9 @@ real product *to* AMD — that's why the memory layer is production-grade, not a
   after recalling grounding from memory. (No serving API attests which accelerator
   handles a request, so we don't claim a specific one.) Opt-in via
   `FIREWORKS_API_KEY`; the demo runs fully offline without it.
-- **AMD Developer Cloud** is where we would run the measurements listed under "What we
-  would measure on real AMD hardware" to replace every projection with a real number.
+- **AMD EPYC + AMD Ryzen** are the measured CPU hosts: recall benchmarks ran on the
+  MI300X node's EPYC 9474F host and on AMD Developer Cloud EPYC, and the Gemma bonus
+  runs on a Ryzen 7 9800X3D — one architecture across the AMD lineup.
 
 ## Field: Technologies used (tags)
 ```
@@ -148,16 +160,11 @@ Each visitor gets an isolated, rate-limited, auto-evicted store. Served from a
 container (`--restart unless-stopped`, key via `--env-file`) behind a Cloudflare tunnel.
 
 ## Field: Demo video  **[DONE — file uploaded]**
-Suggested ≤ 3-minute script (all steps run from a clean clone; no fabricated output):
-1. `python3 src/agent_memory_demo.py` — narrate Session 1 (agent learns facts) → Session
-   2 (new session, empty context, recalls from Perseus Vault, then answers) → LOAD
-   (throughput under a burst) → DECAY (noise archived, signal kept). Point at the
-   "Published-spec estimates" warning banner and the "0 GPU HBM used" line.
-2. `python3 src/benchmark.py --quick` — show the measured latency/footprint tables and
-   the economics table, calling out `data_source` tags.
-3. `docker build -t perseus-amd-act-ii .` — show the ROCm base pulling and the FTS5
-   build-time check passing.
-4. Close on the one-liner: "Keep memory off the GPU; let the MI300X serve tokens."
+Current cut (~2 min, built by `generate_video.py` + `narration.py`, 7 scenes): leads
+with the **measured-on-a-real-MI300X hero scene** (recall flat while the accelerator
+is saturated), then the store→recall→decay loop across a session boundary, the
+measured latency/footprint tables, the economics (measured MI300X point +
+clearly-labelled cross-vendor projection), and an honest closing caveat.
 
 `demo_video.mp4` (repo root) is uploaded directly to the Video Presentation field —
 lablab hosts the file; no external URL is used.
@@ -175,9 +182,11 @@ Perseus Computing LLC (Wyoming)
 
 ## Field: What's next / roadmap
 ```
-1. Run on AMD Developer Cloud and replace every projection with a measured number
-   (recall under saturated MI300X inference; true concurrent-agent ceiling; measured
-   $/agent-hour).
+1. DONE since first submission: rented real MI300X time and measured the core claims
+   (recall under saturated MI300X inference ±0.6%; concurrent-agent ceiling 15.3;
+   $0.143/agent-hour). Next: measured peak serving throughput → measured $/1M tokens,
+   and a measured 2×H100 baseline to convert the cross-vendor row from projection to
+   measured-vs-measured.
 2. Ship a ready-to-deploy "MI300X + Perseus Vault" agent memory reference stack
    (compose file + vLLM/ROCm serving + N per-agent encrypted stores).
 3. Prototype an optional ROCm/HIP dense re-rank offload for hybrid recall and quantify

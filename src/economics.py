@@ -6,7 +6,11 @@ EVERY number in this file is tagged with a data_source:
     projection     : derived here from published-spec inputs + stated assumptions
     measured       : reproducible on real hardware (see benchmark.py)
 
-There are NO measured GPU numbers in this repo. We do not have MI300X time yet.
+MEASURED VALIDATION (2026-07-09): we rented a real AMD Instinct MI300X and measured
+the deployment shape this module projects — serving Qwen2.5-72B bf16 on one card via
+vLLM 0.19.1/ROCm 7.13 gave 15.3 concurrent 8K-token agents at $0.143/agent-hour
+($2.19/GPU-hr), vs the ~$0.133/agent-hr projected below (docs/BENCHMARKS.md §3a).
+Cross-accelerator (H100/A100) rows remain projections — we rented only MI300X.
 The thesis this module quantifies is deliberately CPU-side and therefore honest:
 Perseus Vault keeps the agent memory layer OFF the GPU, so 100% of an accelerator's
 HBM and FLOPs go to inference while durable memory is served for cents on the host
