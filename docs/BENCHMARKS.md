@@ -114,35 +114,45 @@ idle meter — the more on-thesis answer, and no download or key required.)
 ### 3a. Measured on a real MI300X — `data_source: measured`
 
 We served **Qwen2.5-72B-Instruct** (bf16) on one rented **AMD Instinct MI300X**
-(vLLM 0.19.1 + ROCm 7.13, host = **AMD EPYC 9474F**, $2.19/GPU-hr, 2026-07-09) and
-measured the deployment shape directly:
+(vLLM 0.19.1 + ROCm 7.13, host = **AMD EPYC 9474F**, $2.19/GPU-hr retail, 2026-07-09)
+and measured the whole loop — 6 harness runs plus 3 saturation runs (`vllm bench serve`,
+1,024-token inputs / 512-token outputs, max-concurrency 64). Medians reported:
 
 | Metric | Measured | `data_source` |
 |---|---|---|
 | Model weights on GPU | 135.5 GiB | measured (vLLM) |
 | KV-cache budget | 38.36 GiB → 125,696 tokens | measured (vLLM; matches Qwen2.5-72B KV arithmetic, 320 KiB/token) |
-| **Concurrent agents (8K-token seq) / card** | **15.3** | measured (vLLM KV ceiling) |
-| **GPU $/agent-hour** (@ $2.19/GPU-hr) | **$0.143** | measured price ÷ measured ceiling |
-| **Recall p50 — GPU idle vs. serving-saturated** | **18.7 → 18.8 ms (±0.6% median, 6 runs)** | measured (100K store, EPYC host) |
+| **Concurrent agents (8K-token ctx) / card** | **15.3** (15.2–15.3 across configs) | measured (vLLM KV ceiling) |
+| **GPU $/agent-hour** | **$0.143** ($0.143–0.144) | measured price ÷ measured ceiling |
+| Sustained serving throughput | **658 output tok/s** (1,973 total tok/s) | measured (3 runs: 649–660) |
+| Peak output throughput | 1,088 tok/s | measured (identical in all 3 runs) |
+| Per-stream decode speed | 83 ms/token ≈ **12 tok/s per agent stream** | measured (median TPOT) |
+| **$ / 1M output tokens** | **$0.92** ($0.31 / 1M total tokens) | measured throughput × rental price |
+| **Recall p50 — GPU idle vs. serving 72B** | **18.7 → 18.8 ms (±0.6% median, 6 runs)** | measured (100K store, EPYC host) |
 
 The load-bearing claim, now proven under **real 72B inference load** (not just the
 synthetic matmul in §1): recall on the host CPU is unaffected while the MI300X serves —
-across 6 idle-vs-serving comparisons the median p50 delta was **±0.6%** (range −0.4% to
-+1.1%). And the projection below is validated: we projected $0.133/agent-hr, **measured
-$0.143**. Measured concurrency (15.3) came in below the idealized projection (20.4)
-because real vLLM reserves HBM for activations/overhead beyond the raw
-(HBM−weights)/KV arithmetic — the measured number is the honest one.
+across 6 idle-vs-serving comparisons the p50 delta ranged −0.4% to +1.1% (median ≈ +0.5%).
+The projection below is validated: we projected $0.133/agent-hr, **measured $0.143**.
+Measured concurrency (15.3) came in below the idealized projection (20.4) because real
+vLLM reserves HBM for activations/overhead beyond the raw (HBM−weights)/KV arithmetic —
+the measured number is the honest one. Independent corroboration: the saturation runs
+peaked at 80–87 in-flight requests, matching the KV-budget prediction for ~1.5K-token
+requests (125,696 ÷ ~1,536 ≈ 81).
 
-*Scope note — serving throughput (deliberately not featured):* we also observed
-sustained output throughput of ~600–637 tok/s, but only under a **single-process
-serving configuration** (`VLLM_ENABLE_V1_MULTIPROCESSING=0`) that bottlenecks
-high-concurrency serving. We treat that as a floor, not a peak, and do not derive a
-$/token headline from it.
+**Scope, stated plainly:** this is **untuned, out-of-the-box vLLM** — bf16 weights (no
+FP8), no AITER kernels, no speculative decoding. Even so, **$0.92/1M output tokens on a
+single retail-rented card is at parity with managed-API list pricing** for 70B-class
+models — treat these numbers as a floor, not a ceiling. (Earlier single-process runs
+(`VLLM_ENABLE_V1_MULTIPROCESSING=0`) gave the same sustained throughput but 133 ms TPOT
+and long queue times; the multiprocess figures above are the correct serving shape.)
 
 Reproduce: serve with `vllm serve Qwen/Qwen2.5-72B-Instruct --max-model-len 8192
---gpu-memory-utilization 0.92`, then `python3 src/amd_live_benchmark.py --base-url
-http://localhost:8000` (reads the agent ceiling from vLLM's own "Maximum concurrency"
-line and measures recall idle-vs-under-load).
+--gpu-memory-utilization 0.92` (remount `/dev/shm` to ≥16G first on container hosts),
+then `python3 src/amd_live_benchmark.py --base-url http://localhost:8000` for the
+agent-ceiling + recall-under-load metrics, and `vllm bench serve --model
+Qwen/Qwen2.5-72B-Instruct --dataset-name random --random-input-len 1024
+--random-output-len 512 --num-prompts 256 --max-concurrency 64` for the throughput row.
 
 ### 3b. Cross-accelerator projection — `data_source: projection`
 

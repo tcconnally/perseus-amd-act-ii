@@ -184,9 +184,10 @@ Perseus Computing LLC (Wyoming)
 ```
 1. DONE since first submission: rented real MI300X time and measured the core claims
    (recall under saturated MI300X inference ±0.6%; concurrent-agent ceiling 15.3;
-   $0.143/agent-hour). Next: measured peak serving throughput → measured $/1M tokens,
-   and a measured 2×H100 baseline to convert the cross-vendor row from projection to
-   measured-vs-measured.
+   $0.143/agent-hour; sustained 658 output tok/s / peak 1,088 → $0.92 per 1M output
+   tokens at retail rental, untuned bf16). Next: a measured 2×H100 baseline to convert
+   the cross-vendor row from projection to measured-vs-measured, then FP8/AITER tuning
+   to push the measured $/token floor down.
 2. Ship a ready-to-deploy "MI300X + Perseus Vault" agent memory reference stack
    (compose file + vLLM/ROCm serving + N per-agent encrypted stores).
 3. Prototype an optional ROCm/HIP dense re-rank offload for hybrid recall and quantify

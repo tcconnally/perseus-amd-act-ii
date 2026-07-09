@@ -37,11 +37,13 @@ and the MCP registry), not a weekend build. lablab project:
 
 > ### ⚠️ Honesty banner (please read)
 > We rented a real **AMD Instinct MI300X** and measured the claims everything rests
-> on, serving **Qwen2.5-72B** on vLLM/ROCm (host: AMD EPYC 9474F). Measured: one card
-> holds **15.3 concurrent 72B agents** at **$0.143/agent-hour** (validating our $0.133
-> projection) — and the load-bearing result: with the MI300X **saturated serving the
-> 72B**, recall on the host CPU moved **±0.6% (median of 6 runs, 18.7 → 18.8 ms p50)**.
-> The memory layer steals ~zero inference cycles, proven under real load
+> on, serving **Qwen2.5-72B** on vLLM/ROCm (host: AMD EPYC 9474F). Measured (medians):
+> one card holds **15.3 concurrent 72B agents** at **$0.143/agent-hour** (validating
+> our $0.133 projection); sustained **658 output tok/s** (peak 1,088) = **$0.92/1M
+> output tokens** at retail rental — untuned bf16, no FP8/AITER, a floor not a ceiling;
+> and the load-bearing result: with the MI300X **saturated serving the 72B**, recall on
+> the host CPU moved **±0.6% (median of 6 runs, 18.7 → 18.8 ms p50)**. The memory layer
+> steals ~zero inference cycles, proven under real load
 > ([BENCHMARKS §3a](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)).
 > Cross-accelerator (H100/A100) comparisons remain a `projection` (we rented only
 > MI300X). Every number in this repo is tagged with a `data_source`:
