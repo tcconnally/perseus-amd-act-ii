@@ -28,6 +28,7 @@ The key architectural claim: **memory lives on the host CPU, not in GPU HBM.** S
 |---|---|
 | `src/perseus_vault_store.py` | The memory interface. `ReferenceStore` (SQLite/FTS5, CPU, always runs) and `BinaryStore` (bridge to a real `perseus-vault` binary when `PERSEUS_VAULT_BIN` is set). |
 | `src/agent_memory_demo.py` | End-to-end agent: learn → new session → recall → infer → load → decay. |
+| `src/gemma_on_amd.py` | Bonus: same loop with Gemma 3 served locally by llama.cpp on an AMD CPU (partner challenge). |
 | `src/benchmark.py` | Measured throughput + footprint tables (1K/10K/100K) and published-spec economics. |
 | `src/economics.py` | The "one MI300X serves N agents" math. Every value tagged `published-spec` / `projection` / `measured`. |
 | `docs/` | Architecture, benchmarks, and the pre-filled lablab submission. |

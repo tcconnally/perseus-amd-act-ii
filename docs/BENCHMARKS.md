@@ -78,6 +78,20 @@ measured, AMD CPU):
 on the **host**, not in GPU HBM. Thousands of per-agent stores fit in ordinary
 system RAM.
 
+### Bonus — whole agent on one AMD chip (Gemma 3 + Perseus Vault) — `measured`
+
+For the hackathon's Gemma partner challenge, `src/gemma_on_amd.py` runs the same
+recall→infer loop with **Gemma 3 (4B-it, Q4_K_M) served locally by llama.cpp** beside
+the memory layer — one AMD processor, no GPU, no cloud, no API key:
+
+| Host | Recall p50 | Gemma 3 4B generation (wall-clock) | `data_source` |
+|---|---|---|---|
+| AMD Ryzen 7 9800X3D (8-core) | 0.21 ms | ~13 tok/s | measured (2026-07-08) |
+
+(The hackathon's Fireworks credit account exposes no Gemma models — verified, every
+catalog Gemma ID returns `NOT_FOUND` — so Gemma is self-hosted on AMD silicon, which
+is the more on-thesis answer anyway.)
+
 ---
 
 ## 3. Cost economics — one accelerator serves N agents — `data_source: projection`

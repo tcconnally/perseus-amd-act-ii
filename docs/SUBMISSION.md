@@ -82,6 +82,15 @@ for AMD:** by removing memory as a reason to reach for NVIDIA, Perseus Vault tur
 Instinct into the economical home for stateful agent fleets — an adoption wedge for
 Instinct, not just another tool.
 
+**Bonus — Gemma on AMD (partner challenge).** The hackathon's Fireworks account doesn't
+expose Gemma models (verified: every catalog Gemma ID returns NOT_FOUND), so we
+self-hosted the partner building block on AMD silicon instead: `src/gemma_on_amd.py`
+runs the same recall→infer loop with **Gemma 3 4B served locally by llama.cpp on an AMD
+Ryzen 7 9800X3D**, beside the Perseus Vault memory layer — recall 0.21 ms, ~13 tok/s,
+no GPU, no cloud, no API key, all `measured`. One architecture across the AMD lineup:
+Gemma on a Ryzen/EPYC host for single-agent boxes, a 70B-class model on MI300X for
+fleets — the memory layer never moves.
+
 **This is a shipping product, not a weekend build.** Perseus Vault is at v2.19 with
 **32 releases** — a single ~8 MB Rust binary with 55 MCP tools, AES-256-GCM at rest. It's
 distributed where agents actually live: **five framework adapters on PyPI** (LangChain,
@@ -111,7 +120,8 @@ real product *to* AMD — that's why the memory layer is production-grade, not a
 ## Field: Technologies used (tags)
 ```
 Perseus Vault, MCP (Model Context Protocol), Rust, SQLite, FTS5, BM25,
-AES-256-GCM, AMD Instinct MI300X, ROCm, Fireworks AI, Llama-3.1-70B, Python, Docker
+AES-256-GCM, AMD Instinct MI300X, AMD Ryzen, ROCm, Fireworks AI, Gemma 3,
+llama.cpp, Llama-3.1-70B, Python, Docker
 ```
 
 ## Field: GitHub / Source code

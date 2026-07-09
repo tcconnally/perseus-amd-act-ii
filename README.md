@@ -26,11 +26,13 @@ and the MCP registry), not a weekend build. lablab project:
 > the MI300X economics table is a projection. Run a decay tick too. No login,
 > per-visitor sandbox, daily budget cap on inference.
 >
-> <sub>Fireworks AI is this hackathon's designated inference partner and is
+> <sub>Fireworks AI is this hackathon's designated inference partner — the
+> [organizers describe the credits](https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii)
+> as access to *"models hosted on AMD-hardware"*, and Fireworks is
 > [partnering with AMD](https://fireworks.ai/blog/fireworks-amd-ai-infrastructure-partnership)
 > to serve on Instinct accelerators. Like any serving API it does not attest which
-> accelerator handles a given request, so we do not claim one. The memory layer never
-> touches a GPU regardless.</sub>
+> accelerator handles a given request, so we do not claim one ourselves. The memory
+> layer never touches a GPU regardless.</sub>
 
 > ### ⚠️ Honesty banner (please read)
 > Cloud credits did not arrive before the July 11 deadline, so we do **not** have
@@ -212,11 +214,36 @@ measurement (details in [docs/BENCHMARKS.md §4](docs/BENCHMARKS.md#4-what-we-wo
 5. A ROCm/HIP prototype offloading Perseus Vault's dense re-rank to an idle GPU slice —
    an open question we'd answer with data, not claims.
 
+## Bonus building block: Gemma on AMD — the whole agent on one chip
+
+The hackathon's partner challenge asks for the best **AMD-hosted Gemma** project. The
+hackathon's Fireworks credit account does not expose Gemma models (verified 2026-07-08:
+every catalog Gemma ID returns `NOT_FOUND`), so we did the more interesting thing and
+**self-hosted Gemma on AMD silicon**: [`src/gemma_on_amd.py`](src/gemma_on_amd.py) runs
+the same recall→infer architecture with **Gemma 3 (4B-it, Q4_K_M GGUF) served locally by
+llama.cpp on an AMD CPU**, right beside the Perseus Vault memory layer — the fleet story
+scaled down to a single chip.
+
+Measured on an **AMD Ryzen 7 9800X3D** (`measured`, reproduce with the script): recall
+**0.21 ms** + Gemma generation **~13 tok/s wall-clock** — no GPU, no cloud, no API key.
+One architecture across the AMD lineup: **Gemma on a Ryzen/EPYC host** for single-agent
+boxes, **a 70B-class model on MI300X** for fleets — and the memory layer never moves.
+
+```bash
+# 1) llama.cpp:  winget install ggml.llamacpp   (or: brew install llama.cpp)
+# 2) an open Gemma GGUF:
+curl -LO https://huggingface.co/ggml-org/gemma-3-4b-it-GGUF/resolve/main/gemma-3-4b-it-Q4_K_M.gguf
+# 3) serve + run:
+llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8081 --ctx-size 8192 &
+python3 src/gemma_on_amd.py       # prints your CPU + measured numbers
+```
+
 ## What's in this repo
 
 | Path | |
 |---|---|
 | [`src/agent_memory_demo.py`](src/agent_memory_demo.py) | End-to-end stateful agent (learn → recall → infer → decay). |
+| [`src/gemma_on_amd.py`](src/gemma_on_amd.py) | Bonus: Gemma 3 + Perseus Vault on one AMD CPU (partner challenge). |
 | [`src/perseus_vault_store.py`](src/perseus_vault_store.py) | Memory interface: CPU reference store + real-binary bridge. |
 | [`src/benchmark.py`](src/benchmark.py) | Measured throughput/footprint tables + economics. |
 | [`src/economics.py`](src/economics.py) | The "one MI300X serves N agents" model. |
