@@ -14,11 +14,12 @@
 [![Live demo](https://img.shields.io/badge/live%20demo-amd--demo.perseus.observer-3fb950.svg)](https://amd-demo.perseus.observer)
 
 **AMD Developer Hackathon: Act II — Unicorn (Open) Track.** Built on
-[Perseus Vault](https://github.com/Perseus-Computing-LLC/perseus-vault), a
-production, MIT-licensed memory engine (10★, v2.19.1). lablab project:
+[Perseus Vault](https://github.com/Perseus-Computing-LLC/perseus-vault) — a
+**shipping** MIT-licensed memory engine (v2.19, 30 releases, 55 MCP tools, live on PyPI
+and the MCP registry), not a weekend build. lablab project:
 [lablab.ai/…/perseus](https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus).
 
-> ### ▶ Try the live demo — **[amd-demo.perseus.observer](https://amd-demo.perseus.observer)**
+> ### ▶ Judges, start here — try the live demo: **[amd-demo.perseus.observer](https://amd-demo.perseus.observer)**
 > Teach the agent a fact, open a brand-new session, and recall it — then watch an
 > **open-weight LLM (gpt-oss-120b) served on AMD Instinct via the Fireworks AI API**
 > answer using *only* what it recalled. Recall + footprint run on the **host CPU (0 bytes
@@ -210,6 +211,31 @@ measurement (details in [docs/BENCHMARKS.md §4](docs/BENCHMARKS.md#4-what-we-wo
 | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) | All tables, sources, reproduction. |
 | [`docs/SUBMISSION.md`](docs/SUBMISSION.md) | Every lablab form field, pre-filled. |
 | [`Dockerfile`](Dockerfile) | ROCm-based, GPU-ready container. |
+
+## Not a weekend hack — a shipping product
+
+Most hackathon entries are born this week. Perseus Vault is a real product we brought
+*to* AMD — which is why the memory layer here is production-grade, not a prototype:
+
+- **Mature:** v2.19, **30 releases**, single ~8 MB Rust binary, **55 MCP tools**, AES-256-GCM.
+- **Distributed everywhere agents live:** published to **PyPI** as five framework adapters —
+  [LangChain](https://pypi.org/project/langchain-perseus-vault/),
+  [CrewAI](https://pypi.org/project/crewai-perseus-vault/),
+  [PydanticAI](https://pypi.org/project/pydantic-ai-perseus-vault/),
+  [Haystack](https://pypi.org/project/perseus-vault-haystack/),
+  [Google ADK](https://pypi.org/project/adk-perseus-vault-memory/) — and listed in the
+  **MCP registry**, **Smithery**, and **Glama** (`server.json` / `smithery.yaml` / `glama.json`).
+- **Running in production today**, including behind the live demo you can click above.
+
+### Why this matters to AMD
+
+Agent memory is a real, growing market (Mem0, Letta, Zep). Today those stateful-agent
+workloads default to NVIDIA. Perseus Vault removes the reason they'd have to: by keeping
+memory **off the accelerator**, it makes the MI300X's 192 GB HBM3 the cheapest place to
+run a *fleet* of durable agents (**~$0.13/agent-hr — ~7.8× under a 2×H100 deployment**,
+see [benchmarks](docs/BENCHMARKS.md)). In one line: **Perseus Vault turns AMD Instinct
+into the economical home for the agent economy** — an adoption wedge for Instinct, not
+just another memory tool.
 
 ## About
 

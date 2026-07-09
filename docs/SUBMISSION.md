@@ -77,7 +77,17 @@ every incumbent is cloud- or vector-DB-bound. Perseus Vault is the only memory e
 that is simultaneously MCP-native, local-first, zero-dependency, and encrypted, and this
 submission reframes that as an *AMD economics story*: the cheapest way to give a fleet
 of agents durable memory is to keep memory off the accelerator entirely and let the
-MI300X do what it's best at — hold a big model and serve tokens.
+MI300X do what it's best at — hold a big model and serve tokens. **The strategic point
+for AMD:** by removing memory as a reason to reach for NVIDIA, Perseus Vault turns AMD
+Instinct into the economical home for stateful agent fleets — an adoption wedge for
+Instinct, not just another tool.
+
+**This is a shipping product, not a weekend build.** Perseus Vault is at v2.19 with
+**30 releases** — a single ~8 MB Rust binary with 55 MCP tools, AES-256-GCM at rest. It's
+distributed where agents actually live: **five framework adapters on PyPI** (LangChain,
+CrewAI, PydanticAI, Haystack, Google ADK) and listed in the **MCP registry, Smithery, and
+Glama**. It runs in production today, including behind the live demo above. We brought a
+real product *to* AMD — that's why the memory layer is production-grade, not a prototype.
 
 ## Field: How did you use AMD products / platforms?
 

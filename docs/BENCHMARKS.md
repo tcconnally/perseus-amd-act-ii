@@ -39,6 +39,18 @@ and the repo's `benchmark/scale/` gate):
 *The reference implementation's 11.9 ms p50 @100K tracks the shipping engine's
 17 ms FTS5 p50 — the bundled store is a faithful shape of the real recall path.*
 
+**Measured on AMD hardware** (AMD Developer Cloud notebook — **AMD EPYC 9334 32-core**
+host CPU, ROCm 7.2 image, `src/perseus_vault_store.py` reference store, 2026-07-08):
+
+| Entries | Recall p50 (ms) | Recall p99 (ms) | Recall ops/s | `data_source` |
+|---|---|---|---|---|
+| 10,000 | 2.6 | 3.0 | ~372 | measured (AMD EPYC 9334) |
+
+This is the memory layer running on exactly the kind of AMD server CPU that sits next to
+an Instinct accelerator — sub-3 ms recall, on the host, using **0 bytes of GPU HBM**.
+(The pool's GPU is a virtualized RDNA3 slice, so we do not report a GPU-load figure; the
+CPU number is what matters — the memory layer never touches the accelerator.)
+
 ---
 
 ## 2. Memory footprint — `data_source: measured`
