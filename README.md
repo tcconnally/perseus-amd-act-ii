@@ -23,7 +23,8 @@ and the MCP registry), not a weekend build. lablab project:
 > Teach the agent a fact, open a brand-new session, and recall it — then watch an
 > **open-weight LLM (gpt-oss-120b) answer live via the Fireworks AI API** using *only*
 > what it recalled. Recall + footprint run on the **host CPU (0 bytes of GPU HBM)**;
-> the MI300X economics table is a projection. Run a decay tick too. No login,
+> the demo's cross-vendor economics table is a projection (the MI300X point itself is
+> now measured — see the banner below). Run a decay tick too. No login,
 > per-visitor sandbox, daily budget cap on inference.
 >
 > <sub>Fireworks AI is this hackathon's designated inference partner — the
@@ -35,14 +36,15 @@ and the MCP registry), not a weekend build. lablab project:
 > layer never touches a GPU regardless.</sub>
 
 > ### ⚠️ Honesty banner (please read)
-> We rented a real **AMD Instinct MI300X** node and measured the one claim everything
-> rests on: with the **MI300X driven to 100% utilization (97.4 TFLOPS FP16)**, Perseus
-> Vault recall on the host CPU moved just **+0.6% (19.96 → 20.08 ms p50)** — the memory
-> layer steals ~zero cycles from the accelerator
-> ([BENCHMARKS §1](docs/BENCHMARKS.md#1-recall-throughput--latency--data_source-measured)).
-> What we did **not** measure is live vLLM serving throughput on MI300X, so the
-> **`$/agent-hour` economics (§3) remain a `projection`** — never presented as measured.
-> Every number in this repo is tagged with a `data_source`:
+> We rented a real **AMD Instinct MI300X** and measured the claims everything rests
+> on, serving **Qwen2.5-72B** on vLLM/ROCm (host: AMD EPYC 9474F). Measured: one card
+> holds **15.3 concurrent 72B agents** at **$0.143/agent-hour** (validating our $0.133
+> projection) — and the load-bearing result: with the MI300X **saturated serving the
+> 72B**, recall on the host CPU moved **±0.6% (median of 6 runs, 18.7 → 18.8 ms p50)**.
+> The memory layer steals ~zero inference cycles, proven under real load
+> ([BENCHMARKS §3a](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)).
+> Cross-accelerator (H100/A100) comparisons remain a `projection` (we rented only
+> MI300X). Every number in this repo is tagged with a `data_source`:
 > **`measured`** (timed live, reproducible now), **`published-spec`** (vendor
 > datasheet / cloud price list, cited below), or **`projection`** (derived from
 > published-spec inputs with stated assumptions). **No projected number is presented
@@ -139,8 +141,15 @@ FTS5 recall **17.0 ms p50 / 19.4 ms p99** @100K; bulk insert **98,732 entities/s
 | 10,000  | 2.61  | — |
 | 100,000 | 25.95 | ~85 |
 
-### One accelerator serves N agents — `projection` (from `published-spec` inputs)
-Serving Llama-3.1-70B (FP16, ~141 GB) with 8K-token KV cache (~2.5 GB/seq):
+### One accelerator serves N agents — `measured` on MI300X, `projection` cross-vendor
+
+**Measured on a real MI300X (2026-07-09,
+[BENCHMARKS §3a](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)):**
+serving Qwen2.5-72B bf16 on one card via vLLM/ROCm → **15.3 concurrent 8K-token
+agents**, **$0.143/agent-hour** at $2.19/GPU-hr — validating the projection below.
+
+The cross-accelerator comparison models Llama-3.1-70B (FP16, ~141 GB) with 8K-token
+KV cache (~2.5 GB/seq) from published specs (`projection`; we rented only MI300X):
 
 | Accelerator | Cards for weights | Concurrent agents | GPU $/hr | **GPU $/agent-hr** |
 |---|---|---|---|---|
@@ -210,17 +219,22 @@ price lists:
 
 ## What We Measured on Real AMD Hardware — and What's Next
 
-We rented an MI300X node and measured the load-bearing claim; the rest stay on the list
-(details in [docs/BENCHMARKS.md §4](docs/BENCHMARKS.md#4-what-we-measured-on-real-amd-hardware--and-whats-next)):
+We rented real MI300X time (twice) and measured the load-bearing claims; the rest stay
+on the list (details in
+[docs/BENCHMARKS.md §4](docs/BENCHMARKS.md#4-what-we-measured-on-real-amd-hardware--and-whats-next)):
 
-1. **✅ Done — recall p50/p99 on the host EPYC CPU while the MI300X is at 100%
-   utilization (97.4 TFLOPS FP16): +0.6% vs idle.** The CPU memory layer steals ~no
-   accelerator cycles ([§1](docs/BENCHMARKS.md#1-recall-throughput--latency--data_source-measured)).
-   Next refinement: drive that saturation with a live vLLM serving run.
-2. The **true** concurrent-agent ceiling on one MI300X (HBM vs host-RAM bound) vs the
-   ~20 projection.
+1. **✅ Done — recall on the host EPYC CPU while the MI300X is busy.** +0.6% under a
+   synthetic 100%-utilization matmul (97.4 TFLOPS FP16,
+   [§1](docs/BENCHMARKS.md#1-recall-throughput--latency--data_source-measured)) *and*
+   **±0.6% (median, 6 runs) under a real vLLM serving load of Qwen2.5-72B**
+   ([§3a](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)).
+   The CPU memory layer steals ~no accelerator cycles.
+2. **✅ Done — true concurrent-agent ceiling: 15.3** measured from vLLM's KV-cache
+   budget serving a 72B on one MI300X (vs the ~20 idealized projection) — §3a.
 3. End-to-end agent-turn latency (CPU recall + MI300X generation) vs a vector-DB baseline.
-4. Measured $/agent-hour from real Fireworks/ROCm throughput × real cloud price.
+4. **✅ Done — measured $/agent-hour: $0.143** ($2.19/GPU-hr ÷ 15.3 agents) — §3a.
+   *Still open:* peak serving throughput → measured $/1M tokens (our current throughput
+   data is a single-process floor, so we don't headline it).
 5. A ROCm/HIP prototype offloading Perseus Vault's dense re-rank to an idle GPU slice —
    an open question we'd answer with data, not claims.
 
@@ -284,7 +298,8 @@ Most hackathon entries are born this week. Perseus Vault is a real product we br
 Agent memory is a real, growing market (Mem0, Letta, Zep). Today those stateful-agent
 workloads default to NVIDIA. Perseus Vault removes the reason they'd have to: by keeping
 memory **off the accelerator**, it makes the MI300X's 192 GB HBM3 the cheapest place to
-run a *fleet* of durable agents (**~$0.13/agent-hr — ~7.8× under a 2×H100 deployment**,
+run a *fleet* of durable agents (**measured $0.143/agent-hr on a real MI300X; ~7.8×
+under a 2×H100 deployment in the cross-vendor projection**,
 see [benchmarks](docs/BENCHMARKS.md)). And because the memory is local-first, **air-gap
 mode loses nothing** — the regulated buyers who most need on-prem get the *full* product,
 not a degraded one (many stateful-agent tools quietly disable their best features
