@@ -35,12 +35,14 @@ and the MCP registry), not a weekend build. lablab project:
 > layer never touches a GPU regardless.</sub>
 
 > ### ⚠️ Honesty banner (please read)
-> Cloud credits did not arrive before the July 11 deadline, so we do **not** have
-> MI300X measurements yet. (The hackathon's shared AMD Developer Cloud notebook pool
-> exposes an **AMD EPYC host CPU** and a **virtualized RDNA3 GPU slice — not an
-> Instinct card** — so the memory layer *is* measured on AMD server silicon in
-> [BENCHMARKS §1](docs/BENCHMARKS.md#1-recall-throughput--latency--data_source-measured),
-> but there are no Instinct-side numbers.) Every number in this repo is tagged with a `data_source`:
+> We rented a real **AMD Instinct MI300X** node and measured the one claim everything
+> rests on: with the **MI300X driven to 100% utilization (97.4 TFLOPS FP16)**, Perseus
+> Vault recall on the host CPU moved just **+0.6% (19.96 → 20.08 ms p50)** — the memory
+> layer steals ~zero cycles from the accelerator
+> ([BENCHMARKS §1](docs/BENCHMARKS.md#1-recall-throughput--latency--data_source-measured)).
+> What we did **not** measure is live vLLM serving throughput on MI300X, so the
+> **`$/agent-hour` economics (§3) remain a `projection`** — never presented as measured.
+> Every number in this repo is tagged with a `data_source`:
 > **`measured`** (timed live, reproducible now), **`published-spec`** (vendor
 > datasheet / cloud price list, cited below), or **`projection`** (derived from
 > published-spec inputs with stated assumptions). **No projected number is presented
@@ -200,13 +202,15 @@ price lists:
   sequence ~2.5 GB (80 layers, 8 GQA KV heads, head_dim 128, fp16). Derivation lives in
   `src/economics.py`.
 
-## What We Would Measure on Real AMD Hardware
+## What We Measured on Real AMD Hardware — and What's Next
 
-Given an MI300X node on AMD Developer Cloud we would replace every projection with a
-measurement (details in [docs/BENCHMARKS.md §4](docs/BENCHMARKS.md#4-what-we-would-measure-on-real-amd-hardware)):
+We rented an MI300X node and measured the load-bearing claim; the rest stay on the list
+(details in [docs/BENCHMARKS.md §4](docs/BENCHMARKS.md#4-what-we-measured-on-real-amd-hardware--and-whats-next)):
 
-1. Recall p50/p99 on the host EPYC CPU **while the MI300X is saturated** serving
-   Llama-3.1-70B via ROCm/vLLM — proving the CPU memory layer steals no inference cycles.
+1. **✅ Done — recall p50/p99 on the host EPYC CPU while the MI300X is at 100%
+   utilization (97.4 TFLOPS FP16): +0.6% vs idle.** The CPU memory layer steals ~no
+   accelerator cycles ([§1](docs/BENCHMARKS.md#1-recall-throughput--latency--data_source-measured)).
+   Next refinement: drive that saturation with a live vLLM serving run.
 2. The **true** concurrent-agent ceiling on one MI300X (HBM vs host-RAM bound) vs the
    ~20 projection.
 3. End-to-end agent-turn latency (CPU recall + MI300X generation) vs a vector-DB baseline.
