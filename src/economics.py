@@ -10,7 +10,10 @@ MEASURED VALIDATION (2026-07-09): we rented a real AMD Instinct MI300X and measu
 the deployment shape this module projects — serving Qwen2.5-72B bf16 on one card via
 vLLM 0.19.1/ROCm 7.13 gave 15.3 concurrent 8K-token agents at $0.143/agent-hour
 ($2.19/GPU-hr), vs the ~$0.133/agent-hr projected below (docs/BENCHMARKS.md §3a).
-Cross-accelerator (H100/A100) rows remain projections — we rented only MI300X.
+We then rented 2x NVIDIA H100 SXM and measured the cross-vendor claim too: a single
+H100 cannot load the model; the pair's best-boot case serves 5.0 agents at
+$1.68/agent-hour -> 11.7x measured-vs-measured (§3b; the ~7.8x projection below
+UNDERSTATED the advantage). Only the A100 row remains a projection.
 The thesis this module quantifies is deliberately CPU-side and therefore honest:
 Perseus Vault keeps the agent memory layer OFF the GPU, so 100% of an accelerator's
 HBM and FLOPs go to inference while durable memory is served for cents on the host

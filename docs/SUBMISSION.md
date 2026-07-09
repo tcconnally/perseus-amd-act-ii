@@ -205,7 +205,8 @@ Perseus Computing LLC (Wyoming)
 - [x] Runnable demo (`python3 src/agent_memory_demo.py`, stdlib-only, offline)
 - [x] Verifiable data with honest `data_source` tags; no projection shown as measured
 - [x] `.env.example` only — no real credentials committed
-- [x] Demo video produced (`demo_video.mp4`, ~128s, leads with the measured MI300X
+- [x] Demo video produced (`demo_video.mp4`, ~131s, leads with the measured MI300X
+      result and closes on the dual-vendor measured economics table; formerly ~128s
       serving-load result + two-market hook; AMD-specific; built by
       `generate_video.py` + `narration.py`) — lablab hosts the file directly, so it is
       uploaded to the Video Presentation field (not a URL)

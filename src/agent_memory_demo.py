@@ -31,8 +31,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from perseus_vault_store import open_store  # noqa: E402
 
 WARNING = ("NOTE: this demo runs the CPU-side memory layer (data_source: measured). "
-           "MI300X deployment shape was measured on a rented MI300X (docs/BENCHMARKS.md "
-           "S3a); cross-vendor GPU comparisons remain published-spec projections.")
+           "MI300X deployment shape AND the 2xH100 comparison were both measured on "
+           "rented hardware (docs/BENCHMARKS.md S3a-S3b, 11.7x per agent-hour); only "
+           "the A100 row remains a published-spec projection.")
 
 # Open-weight model served via the Fireworks AI API (target deployment: Instinct/ROCm).
 FIREWORKS_MODEL = os.environ.get(
