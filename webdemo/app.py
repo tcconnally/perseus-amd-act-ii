@@ -11,8 +11,9 @@ can, in their browser:
   3. Run a decay tick and watch noise get archived while signal stays.
 
 Everything here runs on the host CPU — 0 bytes of GPU HBM — which is the whole AMD
-economics argument. The MI300X cost table shown alongside is a PROJECTION from
-published specs (labelled as such), never a measurement.
+economics argument. The cost table shown alongside is now MEASURED on real rented
+hardware (one MI300X + one 2x H100 pair, Qwen2.5-72B via vLLM — docs/BENCHMARKS.md
+§3a/§3b); only the A100 row remains a projection, labelled as such.
 
 Guardrails for a public demo: each visitor gets an isolated in-memory store keyed by
 a cookie; stores are capped, rate-limited, and auto-evicted when idle.
@@ -244,13 +245,13 @@ def api_reset():
 def api_economics():
     rows = list(economics.economics_rows())
     return jsonify({
-        "model": economics.MODEL_NAME,
-        "weights_gb": economics.MODEL_WEIGHTS_GB,
+        "model": economics.MEASURED_MODEL_NAME,
+        "weights_gb": economics.MEASURED_WEIGHTS_GB,
         "kv_gb_per_seq": round(economics.KV_GB_PER_SEQ, 2),
         "pv_rss_mb_per_agent": economics.PV_RSS_MB_PER_AGENT,
         "pv_usd_per_agent_hr": round(economics.perseus_vault_cost_per_agent_hr(), 5),
         "rows": rows,
-        "data_source": "projection",
+        "data_source": "measured",
     })
 
 
@@ -325,7 +326,8 @@ INDEX_HTML = r"""<!doctype html>
      <a href="https://fireworks.ai/blog/fireworks-amd-ai-infrastructure-partnership">partnering with
      AMD</a> to serve on Instinct; no serving API attests which accelerator handles a request, so we
      don't claim one. (Daily budget cap; falls back to a labelled memory-grounded composition.) The
-     MI300X cost table is a <b>projection</b> from published specs — not a measurement.</div>
+     cost table below is <b>measured</b> on real rented hardware — one MI300X and one 2×H100 pair
+     (Qwen2.5-72B, vLLM); only the A100 row is a projection.</div>
 
   <div class="grid">
     <div class="card">
@@ -352,11 +354,13 @@ INDEX_HTML = r"""<!doctype html>
   </div>
 
   <div class="card" style="margin-top:16px">
-    <h2>Why AMD: one card, many agents <span class="pill">projection · published-spec</span></h2>
-    <p class="hint" id="econhint">serving one 70B model in FP16; memory stays on CPU (0 HBM).</p>
+    <h2>Why AMD: one card, many agents <span class="pill gpu0">measured · MI300X + 2×H100</span></h2>
+    <p class="hint" id="econhint">serving one 72B model; memory stays on CPU (0 HBM).</p>
     <table id="econ"><thead><tr><th>Accelerator</th><th>HBM</th><th>Cards</th>
-      <th>Agents</th><th>$/GPU-hr</th><th>$/agent-hr</th></tr></thead><tbody></tbody></table>
+      <th>Agents</th><th>$/GPU-hr</th><th>$/agent-hr</th><th>source</th></tr></thead><tbody></tbody></table>
     <p class="stat" id="pvcost"></p>
+    <p class="stat"><b class="ok">11.7× cheaper per agent-hour than 2×H100 — measured, not projected.</b>
+       A single H100 can't load the model at all; the MI300X holds it on one card with KV headroom to spare.</p>
   </div>
 
   <p class="foot">Same recall design as the shipping product (CPU reference implementation):
@@ -406,9 +410,12 @@ async function reset(){await post('/api/reset',{});setStat(0);
    ' — weights '+e.weights_gb+' GB, KV '+e.kv_gb_per_seq+' GB/seq; memory on CPU (0 HBM).';
   const tb=document.querySelector('#econ tbody');
   e.rows.forEach(r=>{const tr=document.createElement('tr');if(r.gpu.includes('MI300X'))tr.className='mi';
+    const agents=r.concurrent_agents!=null?r.concurrent_agents.toFixed(1):'<span class="warn">cannot load</span>';
+    const perag=r.gpu_usd_per_agent_hr!=null?'$'+r.gpu_usd_per_agent_hr:'—';
+    const src='<span class="pill'+(r.data_source=='measured'?' gpu0':'')+'">'+r.data_source+'</span>';
     tr.innerHTML='<td>'+r.gpu+'</td><td>'+r.hbm_gb+' GB</td><td>'+r.cards_for_weights+
-     '</td><td>'+r.concurrent_agents+'</td><td>$'+r.gpu_usd_per_hr+'</td><td>'+
-     (r.gpu_usd_per_agent_hr!=null?'$'+r.gpu_usd_per_agent_hr:'—')+'</td>';tb.appendChild(tr);});
+     '</td><td>'+agents+'</td><td>$'+r.gpu_usd_per_hr+'</td><td>'+perag+'</td><td>'+src+'</td>';
+    tb.appendChild(tr);});
   document.getElementById('pvcost').textContent='Perseus Vault memory: ~$'+e.pv_usd_per_agent_hr+
    '/agent-hr on the host CPU ('+e.pv_rss_mb_per_agent+' MB RSS/agent, 0 bytes HBM) — measured footprint.';})();
 </script></body></html>"""

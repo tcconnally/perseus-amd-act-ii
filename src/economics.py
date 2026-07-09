@@ -48,6 +48,13 @@ A100_80 = GPU("NVIDIA A100 80GB SXM", 80.0, 2.039, 312.0, 400, 1.80)
 MODEL_NAME = "Llama-3.1-70B (FP16)"
 MODEL_WEIGHTS_GB = 141.0        # 70.6B params x 2 bytes
 CONTEXT_TOKENS = 8192
+
+# --- MEASURED deployment (2026-07-09, Qwen2.5-72B-Instruct bf16, vLLM 0.19.1) ---
+# The live cost table below is MEASURED on real rented hardware, not projected:
+# one AMD Instinct MI300X (§3a) and one 2x NVIDIA H100 SXM pair (§3b) in
+# docs/BENCHMARKS.md. Only the A100 row remains a projection (we did not rent one).
+MEASURED_MODEL_NAME = "Qwen2.5-72B-Instruct (bf16)"
+MEASURED_WEIGHTS_GB = 135.5     # measured on GPU (vLLM)
 # KV cache per token for Llama-3.1-70B with GQA (80 layers, 8 KV heads, head_dim 128,
 # fp16, k+v): 2 * 80 * 8 * 128 * 2 bytes = 327,680 B ~= 0.3125 MiB/token.
 KV_BYTES_PER_TOKEN = 2 * 80 * 8 * 128 * 2
@@ -104,24 +111,49 @@ def perseus_vault_cost_per_agent_hr() -> float:
 
 
 def economics_rows():
-    """Yield dict rows for the cost table. Tagged so callers can print sources."""
-    for gpu in (MI300X, H100_SXM, A100_80):
-        n, agents, cost, per_agent = agents_per_deployment(gpu)
-        yield {
-            "gpu": gpu.name,
-            "hbm_gb": gpu.hbm_gb,
-            "cards_for_weights": n,
-            "concurrent_agents": round(agents, 1),
-            "gpu_usd_per_hr": round(cost, 2),
-            "gpu_usd_per_agent_hr": (round(per_agent, 3) if per_agent != float("inf") else None),
-            "pv_memory_usd_per_agent_hr": round(perseus_vault_cost_per_agent_hr(), 5),
-            "data_source": "projection",
+    """Yield dict rows for the live cost table.
+
+    MI300X and both H100 rows are MEASURED on real rented hardware (2026-07-09,
+    Qwen2.5-72B-Instruct bf16, vLLM 0.19.1 — docs/BENCHMARKS.md §3a/§3b). The A100
+    row is a projection (we rented MI300X and H100, not A100). ``concurrent_agents``
+    is None when the deployment cannot even load the model (1x H100 → CUDA OOM).
+    """
+    pv = round(perseus_vault_cost_per_agent_hr(), 5)
+
+    def row(gpu, hbm, cards, agents, gpu_hr, per_agent, source, note):
+        return {
+            "gpu": gpu,
+            "hbm_gb": hbm,
+            "cards_for_weights": cards,
+            "concurrent_agents": agents,
+            "gpu_usd_per_hr": gpu_hr,
+            "gpu_usd_per_agent_hr": per_agent,
+            "pv_memory_usd_per_agent_hr": pv,
+            "data_source": source,
+            "note": note,
         }
+
+    # MI300X — one card holds 72B bf16 with KV headroom to spare (§3a).
+    yield row("AMD Instinct MI300X", 192.0, 1, 15.3, 2.19, 0.143,
+              "measured", "one card holds 72B + 38 GiB KV to spare")
+    # 1x H100 — cannot load the model at all (CUDA OOM) (§3b).
+    yield row("NVIDIA H100 SXM (1 card)", 80.0, 1, None, 3.93, None,
+              "measured", "cannot load the model — CUDA OOM")
+    # 2x H100 — best case that boots: eager-only at 97% util (§3b).
+    yield row("NVIDIA H100 SXM (2 cards)", 80.0, 2, 5.0, 8.38, 1.68,
+              "measured", "best case that boots (eager, 97% util)")
+    # A100 — projection only (not rented); derived from datasheet + price list.
+    n, agents, cost, per_agent = agents_per_deployment(A100_80)
+    yield row(A100_80.name, A100_80.hbm_gb, n, round(agents, 1), round(cost, 2),
+              (round(per_agent, 3) if per_agent != float("inf") else None),
+              "projection", "not rented — datasheet + price list")
 
 
 if __name__ == "__main__":
-    print(f"Model: {MODEL_NAME}  weights={MODEL_WEIGHTS_GB} GB  "
-          f"ctx={CONTEXT_TOKENS}  KV/seq={KV_GB_PER_SEQ:.2f} GB  [projection]")
+    print(f"Live table model: {MEASURED_MODEL_NAME}  weights={MEASURED_WEIGHTS_GB} GB "
+          f"[measured, MI300X + 2xH100; A100 row = projection]")
+    print(f"Projection model:  {MODEL_NAME}  weights={MODEL_WEIGHTS_GB} GB  "
+          f"ctx={CONTEXT_TOKENS}  KV/seq={KV_GB_PER_SEQ:.2f} GB")
     print(f"Perseus Vault memory: {PV_RSS_MB_PER_AGENT} MB RSS / agent  "
           f"(~${perseus_vault_cost_per_agent_hr():.5f}/agent-hr, host CPU) [measured footprint]")
     print()
