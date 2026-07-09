@@ -101,25 +101,26 @@ def make_frame(text_lines, y_offset=100, badge=None):
 # Each scene: dict(lines=[...], badge=bool). Duration is driven by its narration
 # segment length + TAIL_PAD so audio and visuals stay in sync.
 scenes = [
-    # 1 — title (0-8s target)
+    # 1 — title
     dict(lines=[
         ("", None), ("", None),
         ("# Perseus Vault", TITLE_COLOR),
         ("", None),
-        ("  Encrypted Agent Memory for AMD Instinct MI300X", HIGHLIGHT_COLOR),
+        ("  Encrypted Agent Memory — off the GPU, on AMD Instinct MI300X", HIGHLIGHT_COLOR),
     ]),
-    # 2 — what it is (8-20s)
+    # 2 — problem + what it is
     dict(lines=[
-        ("# What it is", TITLE_COLOR),
+        ("# Agents forget when the session ends.", TITLE_COLOR),
+        ("  A bolted-on vector DB eats the HBM you bought for inference.", DIM_COLOR),
         ("", None),
-        ("  • Single self-contained Rust binary", OUTPUT_COLOR),
-        ("  • Hybrid recall  —  SQLite FTS5 full-text + ranking", OUTPUT_COLOR),
-        ("  • 55 tools over the Model Context Protocol (MCP)", OUTPUT_COLOR),
-        ("  • Keeps MI300X HBM 100% free for inference", OUTPUT_COLOR),
+        ("# Perseus Vault", TITLE_COLOR),
+        ("  • Single Rust binary · SQLite FTS5 recall · 55 MCP tools", OUTPUT_COLOR),
+        ("  • Memory lives on the host CPU — 0 bytes of GPU HBM", OUTPUT_COLOR),
         ("", None),
-        ("$ perseus-vault serve --mcp   # one binary, no sidecars", PROMPT_COLOR),
+        ("  Two markets: teams bleeding tokens, + regulated teams", HIGHLIGHT_COLOR),
+        ("  who can't put memory in the cloud at all.", HIGHLIGHT_COLOR),
     ]),
-    # 3 — store / recall / decay under load (20-34s)
+    # 3 — store / recall / decay across a session boundary
     dict(lines=[
         ("$ perseus-vault store \"deploy target: MI300X, ROCm 7\"", PROMPT_COLOR),
         ("[store] entry a1b2 committed  (fts5 indexed)", OUTPUT_COLOR),
@@ -131,8 +132,19 @@ scenes = [
         (">>> recalled across session boundary:", HIGHLIGHT_COLOR),
         (">>> \"deploy target: MI300X, ROCm 7\"", HIGHLIGHT_COLOR),
     ]),
-    # 4 — recall throughput + footprint — matches docs/BENCHMARKS.md §1/§2
-    #     (reference implementation, MEASURED on an AMD CPU)
+    # 4 — MEASURED on a real MI300X (the hero) — docs/BENCHMARKS.md §1
+    dict(badge="data_source: measured (real AMD Instinct MI300X)", lines=[
+        ("# Measured on a real MI300X: recall vs a saturated GPU", TITLE_COLOR),
+        ("", None),
+        ("  MI300X utilization            Recall p50 (host CPU)", HIGHLIGHT_COLOR),
+        ("  -----------------            --------------------", DIM_COLOR),
+        ("  idle  (0%)                    19.96 ms", OUTPUT_COLOR),
+        ("  saturated (100%, 97 TFLOPS)   20.08 ms", (120, 255, 160)),
+        ("", None),
+        ("  recall moved +0.6% while the GPU ran flat-out", HIGHLIGHT_COLOR),
+        ("  → CPU memory layer steals ~0 inference cycles", DIM_COLOR),
+    ]),
+    # 5 — recall throughput + footprint — docs/BENCHMARKS.md §1/§2 (AMD CPU reference)
     dict(badge="data_source: measured (AMD CPU reference)", lines=[
         ("# Recall throughput & footprint", TITLE_COLOR),
         ("", None),
@@ -145,8 +157,7 @@ scenes = [
         ("  BM25 + recency over SQLite FTS5 — on the HOST CPU,", DIM_COLOR),
         ("  0 bytes of GPU HBM.  Reproduce: python src/benchmark.py", DIM_COLOR),
     ]),
-    # 5 — cost economics — matches docs/BENCHMARKS.md §3
-    #     (PROJECTION from published-spec datasheet + cloud-price inputs)
+    # 6 — cost economics — docs/BENCHMARKS.md §3 (PROJECTION)
     dict(badge="data_source: projection (published-spec inputs)", lines=[
         ("# Cost economics  —  serve Llama-3.1-70B FP16", TITLE_COLOR),
         ("", None),
@@ -159,16 +170,15 @@ scenes = [
         ("  1 card fits 70B → most HBM left for agents.", DIM_COLOR),
         ("  ~8x cheaper/agent than H100.  python src/economics.py", DIM_COLOR),
     ]),
-    # 6 — closing (74-88s)
+    # 7 — closing
     dict(lines=[
         ("", None),
         ("# Perseus Vault × AMD Instinct MI300X", TITLE_COLOR),
         ("", None),
         ("  github.com/tcconnally/perseus-amd-act-ii", HIGHLIGHT_COLOR),
         ("", None),
-        ("  Recall = measured (AMD CPU).  Cost = projection", (255, 140, 90)),
-        ("  (published-spec).  No measured MI300X numbers yet —", (255, 140, 90)),
-        ("  real MI300X data pending cloud credits.", (255, 140, 90)),
+        ("  Recall = MEASURED on a real MI300X.  Cost = projection", (255, 140, 90)),
+        ("  (published-spec).  Reproduce: python src/amd_live_benchmark.py", (255, 140, 90)),
     ]),
 ]
 
