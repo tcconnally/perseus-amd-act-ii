@@ -82,9 +82,9 @@ for AMD:** by removing memory as a reason to reach for NVIDIA, Perseus Vault tur
 Instinct into the economical home for stateful agent fleets — an adoption wedge for
 Instinct, not just another tool.
 
-**Bonus — Gemma on AMD (partner challenge).** The hackathon's Fireworks account doesn't
-expose Gemma models (verified: every catalog Gemma ID returns NOT_FOUND), so we
-self-hosted the partner building block on AMD silicon instead: `src/gemma_on_amd.py`
+**Bonus — Gemma on AMD (partner challenge).** Gemma on Fireworks is on-demand and bills
+~$7/hour even while idle, so rather than pay to keep a model warm we
+self-hosted the partner building block on AMD silicon for $0: `src/gemma_on_amd.py`
 runs the same recall→infer loop with **Gemma 3 4B served locally by llama.cpp on an AMD
 Ryzen 7 9800X3D**, beside the Perseus Vault memory layer — recall 0.21 ms, ~13 tok/s,
 no GPU, no cloud, no API key, all `measured`. One architecture across the AMD lineup:

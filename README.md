@@ -220,13 +220,14 @@ We rented an MI300X node and measured the load-bearing claim; the rest stay on t
 
 ## Bonus building block: Gemma on AMD — the whole agent on one chip
 
-The hackathon's partner challenge asks for the best **AMD-hosted Gemma** project. The
-hackathon's Fireworks credit account does not expose Gemma models (verified 2026-07-08:
-every catalog Gemma ID returns `NOT_FOUND`), so we did the more interesting thing and
-**self-hosted Gemma on AMD silicon**: [`src/gemma_on_amd.py`](src/gemma_on_amd.py) runs
-the same recall→infer architecture with **Gemma 3 (4B-it, Q4_K_M GGUF) served locally by
-llama.cpp on an AMD CPU**, right beside the Perseus Vault memory layer — the fleet story
-scaled down to a single chip.
+The hackathon's partner challenge asks for the best **AMD-hosted Gemma** project. On
+Fireworks, Gemma is *on-demand* — you deploy it yourself, and even the cheapest option
+(Gemma 4 E4B) bills **~$7/hour while idle**. Rather than pay to keep a model warm, we did
+the more on-thesis thing and **self-hosted Gemma on AMD silicon for $0**:
+[`src/gemma_on_amd.py`](src/gemma_on_amd.py) runs the same recall→infer architecture with
+**Gemma 3 (4B-it, Q4_K_M GGUF) served locally by llama.cpp on an AMD CPU**, right beside
+the Perseus Vault memory layer — the fleet story scaled down to a single chip, with no
+idle-billing meter running.
 
 Measured on an **AMD Ryzen 7 9800X3D** (`measured`, reproduce with the script): recall
 **0.21 ms** + Gemma generation **~13 tok/s wall-clock** — no GPU, no cloud, no API key.

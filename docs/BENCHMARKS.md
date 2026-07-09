@@ -102,9 +102,9 @@ the memory layer — one AMD processor, no GPU, no cloud, no API key:
 |---|---|---|---|
 | AMD Ryzen 7 9800X3D (8-core) | 0.21 ms | ~13 tok/s | measured (2026-07-08) |
 
-(The hackathon's Fireworks credit account exposes no Gemma models — verified, every
-catalog Gemma ID returns `NOT_FOUND` — so Gemma is self-hosted on AMD silicon, which
-is the more on-thesis answer anyway.)
+(Gemma on Fireworks is on-demand — deploy-it-yourself — and even the cheapest option
+bills ~$7/hour while idle. Self-hosting Gemma on AMD silicon costs $0 and runs with no
+idle meter — the more on-thesis answer, and no download or key required.)
 
 ---
 

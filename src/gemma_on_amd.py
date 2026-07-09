@@ -15,9 +15,9 @@ no cloud, no API key.
 
 HONESTY: everything this script prints is measured live on the machine you run it
 on; it prints the detected CPU so "AMD-hosted" is a fact you can see, not a claim.
-The hackathon's Fireworks credit account does not expose Gemma models (verified
-2026-07-08: all catalog Gemma IDs return NOT_FOUND), so we self-host Gemma on AMD
-silicon instead - which is exactly the point of this submission.
+Gemma on Fireworks is on-demand (deploy-it-yourself) and bills ~$7/hour even while
+idle; rather than pay to keep a model warm, we self-host Gemma on AMD silicon for $0
+- which is exactly the off-the-GPU economics point of this submission.
 
 Run it:
   1) Install llama.cpp (e.g. `winget install ggml.llamacpp` / `brew install llama.cpp`)
