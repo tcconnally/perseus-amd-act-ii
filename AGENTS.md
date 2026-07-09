@@ -7,9 +7,10 @@ description of the agent this project actually ships.
 
 `src/agent_memory_demo.py` is a minimal but complete **stateful agent**:
 
-1. **Inference** runs on an AMD Instinct GPU via the Fireworks AI API (open-weight
-   model, default Llama-3.1-70B). Inference is stateless — the context window dies
-   with the session.
+1. **Inference** is an open-weight model behind the Fireworks AI API (target
+   deployment: AMD Instinct via ROCm/vLLM; no serving API attests which accelerator
+   handles a request). Inference is stateless — the context window dies with the
+   session.
 2. **Memory** is provided by **Perseus Vault**, an MCP-native, local-first,
    encrypted memory engine (single Rust binary). The agent `remember`s durable
    facts, then in a later session `recall`s them *before* prompting the model, so

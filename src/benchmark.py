@@ -25,7 +25,7 @@ from economics import (  # noqa: E402
     economics_rows, perseus_vault_cost_per_agent_hr, PV_RSS_MB_PER_AGENT,
     PV_DISK_MB_PER_AGENT,
 )
-from perseus_vault_store import ReferenceStore, open_store  # noqa: E402
+from perseus_vault_store import ReferenceStore  # noqa: E402
 
 WARNING = (
     "WARNING: GPU/MI300X figures in this report are PUBLISHED-SPEC estimates and "
@@ -140,8 +140,9 @@ def main() -> None:
     print("Perseus Vault  x  AMD Instinct - agentic memory benchmark")
     print("=" * 78)
     print(WARNING)
-    print(f"Reference backend: SQLite/FTS5 (CPU, {sys.platform}, py{sys.version_info.major}."
-          f"{sys.version_info.minor}). Set PERSEUS_VAULT_BIN to bench the real Rust engine.")
+    print(f"Backend: bundled reference store, SQLite/FTS5 (CPU, {sys.platform}, "
+          f"py{sys.version_info.major}.{sys.version_info.minor}). Shipping-engine numbers "
+          "come from the upstream repo's PERF.md (see docs/BENCHMARKS.md).")
     print()
 
     results = [bench_size(n) for n in sizes]

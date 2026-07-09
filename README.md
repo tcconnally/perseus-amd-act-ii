@@ -15,24 +15,30 @@
 
 **AMD Developer Hackathon: Act II — Unicorn (Open) Track.** Built on
 [Perseus Vault](https://github.com/Perseus-Computing-LLC/perseus-vault) — a
-**shipping** MIT-licensed memory engine (v2.19, 30 releases, 55 MCP tools, live on PyPI
+**shipping** MIT-licensed memory engine (v2.19, 32 releases, 55 MCP tools, live on PyPI
 and the MCP registry), not a weekend build. lablab project:
 [lablab.ai/…/perseus](https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus).
 
 > ### ▶ Judges, start here — try the live demo: **[amd-demo.perseus.observer](https://amd-demo.perseus.observer)**
 > Teach the agent a fact, open a brand-new session, and recall it — then watch an
-> **open-weight LLM (gpt-oss-120b) served on AMD Instinct via the Fireworks AI API**
-> answer using *only* what it recalled. Recall + footprint run on the **host CPU (0 bytes
-> of GPU HBM)**; the MI300X economics table is a projection. Run a decay tick too. No
-> login, per-visitor sandbox, daily budget cap on inference.
+> **open-weight LLM (gpt-oss-120b) answer live via the Fireworks AI API** using *only*
+> what it recalled. Recall + footprint run on the **host CPU (0 bytes of GPU HBM)**;
+> the MI300X economics table is a projection. Run a decay tick too. No login,
+> per-visitor sandbox, daily budget cap on inference.
 >
-> <sub>Inference is served on AMD hardware via Fireworks AI — the hackathon's AMD-hosted
-> inference provider ([Fireworks×AMD Instinct partnership](https://fireworks.ai/blog/fireworks-amd-ai-infrastructure-partnership)).
-> The memory layer never touches the GPU regardless.</sub>
+> <sub>Fireworks AI is this hackathon's designated inference partner and is
+> [partnering with AMD](https://fireworks.ai/blog/fireworks-amd-ai-infrastructure-partnership)
+> to serve on Instinct accelerators. Like any serving API it does not attest which
+> accelerator handles a given request, so we do not claim one. The memory layer never
+> touches a GPU regardless.</sub>
 
 > ### ⚠️ Honesty banner (please read)
 > Cloud credits did not arrive before the July 11 deadline, so we do **not** have
-> MI300X measurements yet. Every number in this repo is tagged with a `data_source`:
+> MI300X measurements yet. (The hackathon's shared AMD Developer Cloud notebook pool
+> exposes an **AMD EPYC host CPU** and a **virtualized RDNA3 GPU slice — not an
+> Instinct card** — so the memory layer *is* measured on AMD server silicon in
+> [BENCHMARKS §1](docs/BENCHMARKS.md#1-recall-throughput--latency--data_source-measured),
+> but there are no Instinct-side numbers.) Every number in this repo is tagged with a `data_source`:
 > **`measured`** (timed live, reproducible now), **`published-spec`** (vendor
 > datasheet / cloud price list, cited below), or **`projection`** (derived from
 > published-spec inputs with stated assumptions). **No projected number is presented
@@ -102,7 +108,7 @@ Full write-up: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 Full tables, sources, and reproduction steps: **[docs/BENCHMARKS.md](docs/BENCHMARKS.md)**.
 Reproduce §1–§2 with `python3 src/benchmark.py`.
 
-### Recall latency scales flat with store size — `measured`
+### Recall latency stays in low milliseconds as the store grows 100× — `measured`
 Reference implementation (`src/benchmark.py`, AMD-CPU laptop, Python 3.14):
 
 | Entries | Recall p50 (ms) | Recall p99 (ms) | Insert ops/s |
@@ -149,7 +155,7 @@ python3 src/agent_memory_demo.py
 # 2) Reproduce the measured benchmark tables + economics:
 python3 src/benchmark.py            # add --quick to skip the 100K row
 
-# 3) (optional) Real inference on AMD Instinct via Fireworks AI:
+# 3) (optional) Real inference via the Fireworks AI API (open-weight model):
 cp .env.example .env                # then set FIREWORKS_API_KEY
 python3 src/agent_memory_demo.py
 
@@ -183,8 +189,11 @@ price lists:
 - **NVIDIA H100 SXM** — 80 GB HBM3, 3.35 TB/s, ~989 TFLOPS FP16, 700 W.
 - **NVIDIA A100 80GB SXM** — 80 GB HBM2e, 2.039 TB/s, 312 TFLOPS FP16, 400 W.
 - **Cloud pricing (2026, per-GPU-hour):** MI300X median ~$2.72 (from ~$1.99); H100
-  ~$3.93; A100 80GB ~$1.80. Sources: cloud-GPU price trackers (getdeploying, thundercompute,
-  gpucost.org), July 2026.
+  ~$3.93; A100 80GB ~$1.80. Sources: cloud-GPU price trackers
+  ([getdeploying](https://getdeploying.com/reference/cloud-gpu),
+  [thundercompute](https://www.thundercompute.com),
+  [gpucost.org](https://gpucost.org)), July 2026. Spot prices vary; at a findable
+  ~$2.85/hr H100 the headline ratio is ~5.6× instead of ~7.8×.
 - **Model assumption:** Llama-3.1-70B, FP16 weights ~141 GB; KV cache per 8K-token
   sequence ~2.5 GB (80 layers, 8 GQA KV heads, head_dim 128, fp16). Derivation lives in
   `src/economics.py`.
@@ -221,7 +230,7 @@ measurement (details in [docs/BENCHMARKS.md §4](docs/BENCHMARKS.md#4-what-we-wo
 Most hackathon entries are born this week. Perseus Vault is a real product we brought
 *to* AMD — which is why the memory layer here is production-grade, not a prototype:
 
-- **Mature:** v2.19, **30 releases**, single ~8 MB Rust binary, **55 MCP tools**, AES-256-GCM.
+- **Mature:** v2.19, **32 releases**, single ~8 MB Rust binary, **55 MCP tools**, AES-256-GCM.
 - **Distributed everywhere agents live:** published to **PyPI** as five framework adapters —
   [LangChain](https://pypi.org/project/langchain-perseus-vault/),
   [CrewAI](https://pypi.org/project/crewai-perseus-vault/),
@@ -229,7 +238,8 @@ Most hackathon entries are born this week. Perseus Vault is a real product we br
   [Haystack](https://pypi.org/project/perseus-vault-haystack/),
   [Google ADK](https://pypi.org/project/adk-perseus-vault-memory/) — and listed in the
   **MCP registry**, **Smithery**, and **Glama** (`server.json` / `smithery.yaml` / `glama.json`).
-- **Running in production today**, including behind the live demo you can click above.
+- **Running in production today.** (The live demo above runs this repo's CPU reference
+  implementation of the same recall path — see `webdemo/` — not the Rust binary.)
 
 ### Why this matters to AMD
 

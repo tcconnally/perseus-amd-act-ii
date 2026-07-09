@@ -224,8 +224,8 @@ class BinaryStore:
 
     Backend tag: ``measured`` - but against the shipping Rust engine rather than
     the reference. Activated when PERSEUS_VAULT_BIN is set. Kept intentionally
-    minimal (remember + recall) so the demo can prove real-engine parity; the full
-    55-tool surface is documented at the upstream repo.
+    minimal (remember / recall / decay / count) so the demo can prove real-engine
+    parity; the full 55-tool surface is documented at the upstream repo.
     """
 
     backend = "perseus-vault-binary"
@@ -238,37 +238,80 @@ class BinaryStore:
             stderr=subprocess.DEVNULL, text=True, bufsize=1,
         )
         self._id = 0
+        # MCP requires an initialize handshake before any tools/call.
+        self._rpc("initialize", {
+            "protocolVersion": "2024-11-05", "capabilities": {},
+            "clientInfo": {"name": "perseus-amd-act-ii", "version": "1.0"},
+        })
+        self._send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+    def _send(self, obj: dict) -> None:
+        assert self.proc.stdin
+        self.proc.stdin.write(json.dumps(obj) + "\n")
+        self.proc.stdin.flush()
 
     def _rpc(self, method: str, params: dict) -> dict:
         self._id += 1
-        req = {"jsonrpc": "2.0", "id": self._id, "method": method, "params": params}
-        assert self.proc.stdin and self.proc.stdout
-        self.proc.stdin.write(json.dumps(req) + "\n")
-        self.proc.stdin.flush()
+        self._send({"jsonrpc": "2.0", "id": self._id, "method": method,
+                    "params": params})
+        assert self.proc.stdout
         line = self.proc.stdout.readline()
-        return json.loads(line) if line else {}
+        res = json.loads(line) if line else {}
+        if "error" in res:
+            raise RuntimeError(f"perseus-vault RPC {method}: {res['error']}")
+        return res.get("result", {})
+
+    def _call(self, tool: str, arguments: dict) -> dict:
+        """tools/call, returning the tool's structured payload as a dict."""
+        res = self._rpc("tools/call", {"name": tool, "arguments": arguments})
+        if isinstance(res.get("structuredContent"), dict):
+            return res["structuredContent"]
+        content = res.get("content") or []
+        if content and content[0].get("type") == "text":
+            try:
+                return json.loads(content[0]["text"])
+            except ValueError:
+                pass
+        return {}
 
     def remember(self, category: str, text: str, now: float | None = None) -> str:
-        res = self._rpc("tools/call", {
-            "name": "mimir_remember",
-            "arguments": {"category": category, "key": uuid.uuid4().hex,
-                          "body_json": json.dumps({"text": text})},
+        out = self._call("perseus_vault_remember", {
+            "category": category, "key": uuid.uuid4().hex,
+            "body_json": json.dumps({"text": text}),
         })
-        return json.dumps(res.get("result", {}))
+        return str(out.get("id", ""))
+
+    def remember_many(self, rows: Iterable[tuple[str, str]],
+                      now: float | None = None) -> int:
+        n = 0
+        for category, text in rows:
+            self.remember(category, text)
+            n += 1
+        return n
 
     def recall(self, query: str, k: int = 5, now: float | None = None) -> list[RecallHit]:
-        res = self._rpc("tools/call", {
-            "name": "mimir_recall", "arguments": {"query": query, "limit": k},
-        })
+        out = self._call("perseus_vault_recall", {"query": query, "limit": k})
         hits: list[RecallHit] = []
-        for i, item in enumerate(res.get("result", {}).get("results", [])):
-            text = item.get("body_json", item.get("text", ""))
+        for i, item in enumerate(out.get("items", [])):
+            text = item.get("text") or item.get("body_json", "")
             hits.append(RecallHit(
-                memory=Memory(id=item.get("id", str(i)), category=item.get("category", ""),
-                              text=str(text), created_at=0.0, last_recalled_at=0.0),
+                memory=Memory(id=item.get("id", str(i)),
+                              category=item.get("category", ""),
+                              text=str(text), created_at=0.0, last_recalled_at=0.0,
+                              recall_count=int(item.get("retrieval_count", 0))),
                 rank=float(i),
             ))
         return hits
+
+    def decay(self, now: float | None = None, **_: object) -> int:
+        # The real engine decays on its own wall clock; the `now` time-jump is a
+        # reference-store-only affordance, so a fresh store archives 0 here.
+        out = self._call("perseus_vault_decay", {})
+        return int(out.get("auto_archived", 0))
+
+    def count(self, include_archived: bool = False) -> int:
+        out = self._call("perseus_vault_stats", {})
+        return int(out.get("total_entities", 0))
 
     def close(self) -> None:
         self.proc.terminate()

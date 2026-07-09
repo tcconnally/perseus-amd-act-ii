@@ -107,14 +107,14 @@ than H100, ~3.6× cheaper than A100)** for this workload. Perseus Vault keeps me
 on the CPU (~$0.0004/agent-hr, **~0.3% of the agent's hourly cost**), so none of that
 192 GB is wasted storing what the agent knows instead of serving tokens.
 
-> **On the FP16 assumption (honest caveat).** We model **unquantized** Llama-3.1-70B —
-> which is exactly how AMD and Fireworks frame the MI300X's advantage: *"unquantized
-> Llama-3.1-70B fits on one MI300X"*
-> ([Fireworks×AMD](https://fireworks.ai/blog/fireworks-amd-ai-infrastructure-partnership)).
-> Quantize to FP8 and a 70B fits on a single H100 too — so the MI300X edge then shifts
-> from *"fits on one card"* to *"far more KV-cache headroom → more concurrent agents per
-> card,"* a **smaller but still real** $/agent-hour advantage. Either way the load-bearing
-> claim holds: Perseus Vault memory stays on the CPU and consumes **0 bytes of HBM**.
+> **On the FP16 assumption (honest caveat).** We model **unquantized** Llama-3.1-70B.
+> The single-card claim is arithmetic from the cited datasheets, not a quote: FP16
+> weights are ~141 GB (70.6B params × 2 bytes), which fits inside the MI300X's 192 GB
+> of HBM3 and does not fit inside the 80 GB of an H100 or A100. Quantize to FP8 and a
+> 70B fits on a single H100 too — the MI300X edge then shifts from *"fits on one card"*
+> to *"far more KV-cache headroom → more concurrent agents per card,"* a **smaller but
+> still real** $/agent-hour advantage. Either way the load-bearing claim holds:
+> Perseus Vault memory stays on the CPU and consumes **0 bytes of HBM**.
 
 Reproduce the model: `python3 src/economics.py`.
 

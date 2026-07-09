@@ -7,11 +7,13 @@ Numbers referenced here match docs/BENCHMARKS.md in the repo:
 
 NARRATION = [
     # Scene 1 (title)
-    "Perseus Vault. Agentic memory, running on AMD Instinct M I 300 X.",
+    "Perseus Vault. Encrypted agent memory, built to keep AMD Instinct "
+    "M I 300 X memory free for inference.",
     # Scene 2 (what it is)
     "Perseus Vault is a single Rust binary. Hybrid recall powered by SQLite "
-    "full text search, twenty seven tools over the Model Context Protocol, "
-    "and it all runs on one M I 300 X accelerator.",
+    "full text search, fifty five tools over the Model Context Protocol, "
+    "and it's designed so a single M I 300 X accelerator can serve a whole "
+    "fleet of agents.",
     # Scene 3 (store / recall / decay under load)
     "Watch it work under load. Store a memory, recall it, and let unused "
     "entries decay. The key moment: a fact written in one session is recalled "

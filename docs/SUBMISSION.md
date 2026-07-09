@@ -54,8 +54,8 @@ in HBM.
 **What we built for Act II.** A complete, runnable stateful agent that demonstrates the
 full loop: it learns durable facts in one session, then in a brand-new session (empty
 context window) recalls them from Perseus Vault *before* prompting an open-weight model
-served on AMD Instinct via the Fireworks AI API, holds recall latency flat under a
-burst of load, and runs a decay tick that ages noise into an auditable archive so recall
+via the Fireworks AI API (the hackathon's designated inference partner), keeps recall
+latency low under a burst of load, and runs a decay tick that ages noise into an auditable archive so recall
 quality survives as the store grows. The whole thing is containerized on a ROCm base
 image and ships with a reproducible benchmark harness.
 
@@ -83,7 +83,7 @@ Instinct into the economical home for stateful agent fleets — an adoption wedg
 Instinct, not just another tool.
 
 **This is a shipping product, not a weekend build.** Perseus Vault is at v2.19 with
-**30 releases** — a single ~8 MB Rust binary with 55 MCP tools, AES-256-GCM at rest. It's
+**32 releases** — a single ~8 MB Rust binary with 55 MCP tools, AES-256-GCM at rest. It's
 distributed where agents actually live: **five framework adapters on PyPI** (LangChain,
 CrewAI, PydanticAI, Haystack, Google ADK) and listed in the **MCP registry, Smithery, and
 Glama**. It runs in production today, including behind the live demo above. We brought a
@@ -99,8 +99,11 @@ real product *to* AMD — that's why the memory layer is production-grade, not a
 - **ROCm** is the software stack the container targets for GPU inference (via
   vLLM/Fireworks), and it's the runtime we'd use to prototype offloading Perseus Vault's
   optional dense re-rank to an idle GPU slice.
-- **Fireworks AI API** serves the open-weight LLM (default Llama-3.1-70B) running on AMD
-  hardware; the agent calls it after recalling grounding from memory. Opt-in via
+- **Fireworks AI API** — the hackathon's designated inference partner, now
+  [partnering with AMD](https://fireworks.ai/blog/fireworks-amd-ai-infrastructure-partnership)
+  to serve on Instinct accelerators — serves the open-weight LLM; the agent calls it
+  after recalling grounding from memory. (No serving API attests which accelerator
+  handles a request, so we don't claim a specific one.) Opt-in via
   `FIREWORKS_API_KEY`; the demo runs fully offline without it.
 - **AMD Developer Cloud** is where we would run the measurements listed under "What we
   would measure on real AMD hardware" to replace every projection with a real number.
@@ -121,15 +124,16 @@ Built on the production engine: https://github.com/Perseus-Computing-LLC/perseus
 ```
 https://amd-demo.perseus.observer
 ```
-A hosted, clickable version of `webdemo/` — the repo's real SQLite + FTS5 recall
-engine running live on the **host CPU** (0 bytes of GPU HBM). Visitors teach the agent
-facts (Session 1), start a fresh session and recall them (Session 2), then an
-**open-weight LLM (gpt-oss-120b) served on AMD Instinct via the Fireworks AI API**
-answers using only the recalled facts — the full recall→infer loop, live on AMD. A
-decay tick and the MI300X-vs-H100-vs-A100 economics table round it out. Honest scope:
-recall/footprint are measured on CPU; the LLM answer is real inference on AMD (with a
-per-day budget cap; it falls back to a labelled memory-grounded composition when the
-cap is hit — never a fabricated generation); the MI300X economics are `projection`.
+A hosted, clickable version of `webdemo/` — the repo's SQLite + FTS5 recall path
+(CPU reference implementation) running live on the **host CPU** (0 bytes of GPU HBM).
+Visitors teach the agent facts (Session 1), start a fresh session and recall them
+(Session 2), then an **open-weight LLM (gpt-oss-120b) via the Fireworks AI API** (the
+hackathon's designated inference partner) answers using only the recalled facts — the
+full recall→infer loop, live. A decay tick and the MI300X-vs-H100-vs-A100 economics
+table round it out. Honest scope: recall/footprint are measured on CPU; the LLM answer
+is real inference via Fireworks (with a per-day budget cap; it falls back to a labelled
+memory-grounded composition when the cap is hit — never a fabricated generation); the
+MI300X economics are `projection`.
 Each visitor gets an isolated, rate-limited, auto-evicted store. Served from a
 container (`--restart unless-stopped`, key via `--env-file`) behind a Cloudflare tunnel.
 
@@ -144,17 +148,14 @@ Suggested ≤ 3-minute script (all steps run from a clean clone; no fabricated o
 3. `docker build -t perseus-amd-act-ii .` — show the ROCm base pulling and the FTS5
    build-time check passing.
 4. Close on the one-liner: "Keep memory off the GPU; let the MI300X serve tokens."
-```
-VIDEO URL: <paste YouTube/Loom link here before final submit>
-```
 
-## Field: Presentation / Slides  **[ACTION NEEDED — optional]**
-```
-SLIDES URL: <optional; README + docs/ARCHITECTURE.md + docs/BENCHMARKS.md cover it>
-```
-If slides are wanted, the three-panel deck writes itself from this repo: (1) Problem —
-memory eats HBM; (2) Solution — Perseus Vault keeps memory on the CPU; (3) Data — the
-economics table + honesty banner.
+`demo_video.mp4` (repo root) is uploaded directly to the Video Presentation field —
+lablab hosts the file; no external URL is used.
+
+## Field: Presentation / Slides  **[DONE — PDF uploaded]**
+Slide deck (PDF) uploaded to the Slide Presentation field. The three-panel story
+mirrors this repo: (1) Problem — memory eats HBM; (2) Solution — Perseus Vault keeps
+memory on the CPU; (3) Data — the economics table + honesty banner.
 
 ## Field: Team members
 ```
@@ -192,9 +193,10 @@ Perseus Computing LLC (Wyoming)
       Track, not Track 1/2); honest measured-vs-projection note in Additional Information
 - [x] Live hosted demo deployed: https://amd-demo.perseus.observer (CPU-only memory
       engine, per-visitor sandbox, smoke-tested over TLS end-to-end 2026-07-08)
-- [ ] **Update Demo Application URL on lablab Step 3 to https://amd-demo.perseus.observer**
-      (was pointing at the repo); keep Platform = "Other"
-- [ ] **Final human check + click Submit on lablab before the Jul 11 deadline**
+- [x] Demo Application URL on lablab Step 3 set to https://amd-demo.perseus.observer;
+      Platform = "Other" (done 2026-07-08)
+- [x] Final human check + Submit clicked on lablab (done 2026-07-08, ahead of the
+      Jul 11 deadline)
 
 > lablab submission form: https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus/submission
 > The Video Presentation field takes an uploaded file (it displays the clip inline), not

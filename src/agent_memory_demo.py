@@ -1,16 +1,19 @@
 """
 agent_memory_demo - an agent that remembers, across sessions, using Perseus Vault.
 
-The story: an agent's LLM runs on an AMD Instinct MI300X (served via the Fireworks
-AI API / vLLM on ROCm). That inference is stateless - the moment a session ends, the
-context window is gone. Perseus Vault is the durable memory layer that lets the agent
-carry knowledge from one session into the next, WITHOUT consuming any GPU HBM.
+The story: the agent's LLM is designed to run on an AMD Instinct MI300X (vLLM on
+ROCm, or behind an API such as Fireworks AI). That inference is stateless - the
+moment a session ends, the context window is gone. Perseus Vault is the durable
+memory layer that lets the agent carry knowledge from one session into the next,
+WITHOUT consuming any GPU HBM.
 
 This script demonstrates the full loop end-to-end and runs anywhere:
   * Memory  : Perseus Vault reference store (SQLite/FTS5, CPU) - or the real
               perseus-vault binary if PERSEUS_VAULT_BIN is set.
-  * Inference: Fireworks AI on AMD (real HTTP call) if FIREWORKS_API_KEY is set;
+  * Inference: Fireworks AI (real HTTP call) if FIREWORKS_API_KEY is set;
               otherwise a deterministic offline stand-in so the demo always runs.
+              (No serving API attests which accelerator handles a request, so we
+              never claim a specific one.)
 
 HONESTY: no GPU is touched unless you supply FIREWORKS_API_KEY. Any MI300X/ROCm
 performance number this repo prints is a published-spec estimate, never a
@@ -30,21 +33,21 @@ from perseus_vault_store import open_store  # noqa: E402
 WARNING = ("WARNING: Published-spec estimates for MI300X/ROCm. "
            "Real MI300X data pending AMD hardware access.")
 
-# Model served on AMD (via Fireworks AI / ROCm). Open-weight by design.
+# Open-weight model served via the Fireworks AI API (target deployment: Instinct/ROCm).
 FIREWORKS_MODEL = os.environ.get(
     "FIREWORKS_MODEL", "accounts/fireworks/models/llama-v3p1-70b-instruct")
 
 
 def infer(prompt: str) -> str:
-    """Call the LLM served on AMD hardware, or fall back to an offline stand-in.
+    """Call the LLM via the Fireworks AI API, or fall back to an offline stand-in.
 
     Returns model text. The fallback is clearly a stand-in - it never pretends to
     be a real generation.
     """
     key = os.environ.get("FIREWORKS_API_KEY")
     if not key:
-        return ("[offline stand-in - set FIREWORKS_API_KEY to run real inference on "
-                "AMD Instinct via Fireworks AI]")
+        return ("[offline stand-in - set FIREWORKS_API_KEY to run real inference "
+                "via the Fireworks AI API]")
     try:
         import json
         import urllib.request
@@ -73,7 +76,7 @@ def hr(title: str) -> None:
 
 def main() -> None:
     print(WARNING)
-    print(f"Inference target : Fireworks AI on AMD Instinct - {FIREWORKS_MODEL}")
+    print(f"Inference target : Fireworks AI API (hackathon inference partner) - {FIREWORKS_MODEL}")
 
     store = open_store(os.environ.get("PERSEUS_VAULT_DB", ":memory:"))
     print(f"Memory backend   : {store.backend} (data_source={store.data_source})")
@@ -104,7 +107,7 @@ def main() -> None:
     grounding = "\n".join(f"- {h.memory.text}" for h in hits)
     answer = infer(f"Using only these remembered facts:\n{grounding}\n\n"
                    f"Answer briefly: {question}")
-    print("\n  agent answer (LLM on AMD Instinct):")
+    print("\n  agent answer (open-weight LLM via Fireworks AI):")
     print(f"    {answer}")
 
     # --- Load: recall under a burst, the way a busy multi-agent host behaves ---
@@ -120,7 +123,12 @@ def main() -> None:
     for i in range(iters):
         store.recall(probes[i % len(probes)], k=5, now=now + 7200)
     dt = time.perf_counter() - t0
-    print(f"  store size        : {n} memories")
+    print(f"  burst inserted    : 2000 bulk memories")
+    print(f"  store size        : {n} active (engine-reported)")
+    if store.backend != "reference":
+        print("  note              : the shipping engine keeps a bounded buffer of recent")
+        print("                      items by design (noise control); the reference store")
+        print("                      keeps everything until decay.")
     print(f"  recalls           : {iters}")
     print(f"  wall time         : {dt*1000:.1f} ms")
     print(f"  throughput        : {iters/dt:,.0f} recall ops/sec  [measured, this CPU]")

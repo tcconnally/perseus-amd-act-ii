@@ -18,6 +18,13 @@ venv/
 perseus-amd-demo.db*
 bench-*.json
 
+# Video-build intermediates (only demo_video.mp4 is committed)
+_frames/
+audio/
+voiceover.mp3
+*.onnx
+*.onnx.json
+
 # OS / editor
 .DS_Store
 Thumbs.db

@@ -106,7 +106,7 @@ scenes = [
         ("", None), ("", None),
         ("# Perseus Vault", TITLE_COLOR),
         ("", None),
-        ("  Agentic Memory on AMD Instinct MI300X", HIGHLIGHT_COLOR),
+        ("  Encrypted Agent Memory for AMD Instinct MI300X", HIGHLIGHT_COLOR),
     ]),
     # 2 — what it is (8-20s)
     dict(lines=[
@@ -114,8 +114,8 @@ scenes = [
         ("", None),
         ("  • Single self-contained Rust binary", OUTPUT_COLOR),
         ("  • Hybrid recall  —  SQLite FTS5 full-text + ranking", OUTPUT_COLOR),
-        ("  • 27 tools over the Model Context Protocol (MCP)", OUTPUT_COLOR),
-        ("  • Runs on a single AMD Instinct MI300X", OUTPUT_COLOR),
+        ("  • 55 tools over the Model Context Protocol (MCP)", OUTPUT_COLOR),
+        ("  • Keeps MI300X HBM 100% free for inference", OUTPUT_COLOR),
         ("", None),
         ("$ perseus-vault serve --mcp   # one binary, no sidecars", PROMPT_COLOR),
     ]),
