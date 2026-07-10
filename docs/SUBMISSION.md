@@ -98,8 +98,8 @@ no GPU, no cloud, no API key, all `measured`. One architecture across the AMD li
 Gemma on a Ryzen/EPYC host for single-agent boxes, a 70B-class model on MI300X for
 fleets — the memory layer never moves.
 
-**This is a shipping product, not a weekend build.** Perseus Vault is at v2.19 with
-**32 releases** — a single ~8 MB Rust binary with 55 MCP tools, AES-256-GCM at rest. It's
+**This is a shipping product, not a weekend build.** Perseus Vault is at v2.20 with
+**35 releases** — a single ~8 MB Rust binary with 56 MCP tools, AES-256-GCM at rest. It's
 distributed where agents actually live: **five framework adapters on PyPI** (LangChain,
 CrewAI, PydanticAI, Haystack, Google ADK) and listed in the **MCP registry, Smithery, and
 Glama**. It runs in production today, including behind the live demo above. We brought a

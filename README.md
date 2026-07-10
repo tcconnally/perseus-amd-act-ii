@@ -15,7 +15,7 @@
 
 **AMD Developer Hackathon: Act II — Unicorn (Open) Track.** Built on
 [Perseus Vault](https://github.com/Perseus-Computing-LLC/perseus-vault) — a
-**shipping** MIT-licensed memory engine (v2.19, 32 releases, 55 MCP tools, live on PyPI
+**shipping** MIT-licensed memory engine (v2.20, 35 releases, 56 MCP tools, live on PyPI
 and the MCP registry), not a weekend build. lablab project:
 [lablab.ai/…/perseus](https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii/perseus).
 
@@ -133,9 +133,11 @@ Reference implementation (`src/benchmark.py`, AMD-CPU laptop, Python 3.14):
 | 10,000  | 1.14  | 1.44  | 72,217 |
 | 100,000 | 11.87 | 15.67 | 68,276 |
 
-Shipping engine (Perseus Vault v2.19.x, **measured**, AMD CPU — see
+Shipping engine (Perseus Vault v2.20.0, **measured**, AMD CPU — see
 [PERF.md](https://github.com/Perseus-Computing-LLC/perseus-vault/blob/main/PERF.md)):
-FTS5 recall **17.0 ms p50 / 19.4 ms p99** @100K; bulk insert **98,732 entities/s**.
+FTS5 recall **15.7 ms p50 / 23.2 ms p99** @100K, **hybrid recall 79.7 ms p50**
+(**3.7× faster since v2.19** — [#511](https://github.com/Perseus-Computing-LLC/perseus-vault/blob/main/PERF.md)),
+bi-temporal `as_of` **~0.1 ms flat**; bulk insert **98,732 entities/s**.
 
 ### Footprint stays tiny — `measured`
 
@@ -289,7 +291,7 @@ python3 src/gemma_on_amd.py       # prints your CPU + measured numbers
 Most hackathon entries are born this week. Perseus Vault is a real product we brought
 *to* AMD — which is why the memory layer here is production-grade, not a prototype:
 
-- **Mature:** v2.19, **32 releases**, single ~8 MB Rust binary, **55 MCP tools**, AES-256-GCM.
+- **Mature:** v2.20, **35 releases**, single ~8 MB Rust binary, **56 MCP tools**, AES-256-GCM.
 - **Distributed everywhere agents live:** published to **PyPI** as five framework adapters —
   [LangChain](https://pypi.org/project/langchain-perseus-vault/),
   [CrewAI](https://pypi.org/project/crewai-perseus-vault/),

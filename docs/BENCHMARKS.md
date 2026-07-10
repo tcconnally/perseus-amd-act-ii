@@ -26,19 +26,30 @@ Python 3.14, single process — reproduce with `src/benchmark.py`):
 | 10,000  | 953   | 1.14  | 1.44  | 72,217 |
 | 100,000 | 92    | 11.87 | 15.67 | 68,276 |
 
-**Shipping engine** (Perseus Vault v2.19.x Rust binary, measured on AMD 16-core CPU
+**Shipping engine** (Perseus Vault v2.20.0 Rust binary, measured on AMD 16-core CPU
 "Family 26", Windows 11 — source: [PERF.md](https://github.com/Perseus-Computing-LLC/perseus-vault/blob/main/PERF.md)
 and the repo's `benchmark/scale/` gate):
 
 | Recall mode @ 100K | p50 (ms) | p99 (ms) | `data_source` |
 |---|---|---|---|
-| FTS5 (lexical)   | 17.0  | 19.4  | measured |
-| Dense (sign-bit) | 24.9  | 29.3  | measured |
-| Hybrid (RRF)     | 308.4 | 325.3 | measured |
+| FTS5 (lexical)   | 15.7  | 23.2  | measured |
+| Dense (sign-bit) | 25.4  | 32.8  | measured |
+| Hybrid (RRF, default) | 79.7 | 92.9 | measured |
+| Bi-temporal `as_of` point lookup | 0.12 | 0.46 | measured |
 | Bulk insert (100K) | — | — | 98,732 entities/s (measured) |
 
 *The reference implementation's 11.9 ms p50 @100K tracks the shipping engine's
-17 ms FTS5 p50 — the bundled store is a faithful shape of the real recall path.*
+15.7 ms FTS5 p50 — the bundled store is a faithful shape of the real recall path.*
+
+**What changed since our initial submission (v2.19 → v2.20).** The default **hybrid**
+recall path is now **3.7× faster** at 100K — **308 → 80 ms p50** — with **byte-identical
+recall quality** (recall@5 unchanged, pinned by the deterministic recall gate). The
+sparse BM25 arm had been hydrating *every* FTS match before ranking; [#511](https://github.com/Perseus-Computing-LLC/perseus-vault/blob/main/PERF.md)
+now ranks inside the FTS index and runs the dense and sparse arms concurrently. And
+**bi-temporal `as_of` stays ~0.1 ms flat at 100K** — the temporal differentiator holds
+at scale. The numbers above are the repo's signed `benchmark/scale/` baseline (recall
+path unchanged since #511), independently reconfirmed on the **v2.20.0** binary
+2026-07-10 (hybrid **79.5 ms p50**, `signature_sha256` in `benchmark/scale/`).
 
 ### Measured on a real MI300X node — recall is unaffected while the GPU is saturated — `measured`
 
@@ -154,6 +165,27 @@ then `python3 src/amd_live_benchmark.py --base-url http://localhost:8000` for th
 agent-ceiling + recall-under-load metrics, and `vllm bench serve --model
 Qwen/Qwen2.5-72B-Instruct --dataset-name random --random-input-len 1024
 --random-output-len 512 --num-prompts 256 --max-concurrency 64` for the throughput row.
+
+### 3a-bis. Independently reconfirmed on a second MI300X — 2026-07-10 — `data_source: measured`
+
+Re-run on a **freshly rented MI300X** (RunPod, vLLM 0.19.1 + ROCm 7.13, host **AMD
+EPYC 9474F**) using the **shipping v2.20.0 Rust binary over MCP stdio** — not the
+Python reference store used above. Every load-bearing number reproduced:
+
+| Metric | 2026-07-09 (original) | 2026-07-10 (2nd node, Rust binary) | data_source |
+|---|---|---|---|
+| Concurrent agents/card (vLLM KV ceiling) | 15.3 | **15.25 → 15.2** | measured |
+| GPU $/agent-hour @ $2.19/hr retail | $0.143 | **$0.144** | measured |
+| Sustained output tok/s (canonical `vllm bench serve`, 3-run median) | 658 | **657.9** (peak **1,088**, TPOT 83.6 ms) | measured |
+| $/1M output tokens | $0.92 | **$0.92** | measured |
+| Recall p50 under real 72B serving load | ±0.6% (6 runs) | **−1.2% median** (6 runs, −0.8% to −1.6% — never slower) | measured |
+| Recall p50 under synthetic FP16 burn | +0.6% (97.4 TFLOPS) | **−0.4%** (145.3 TFLOPS) | measured |
+
+Same claims, second card, production binary. The recall-under-load numbers use
+`benchmark/contention/{live_bench,burn_bench}.py` from the shipping repo. (This
+run's pod billed at RunPod on-demand ~$3/GPU-hr; the $/agent-hr above is stated at
+the same **$2.19 retail** reference as the original for apples-to-apples — the
+measured agents-per-card and throughput are price-independent.)
 
 ### 3b. Measured cross-vendor baseline: 2× NVIDIA H100 SXM — `data_source: measured`
 

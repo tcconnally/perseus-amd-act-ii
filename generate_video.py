@@ -114,7 +114,7 @@ scenes = [
         ("  A bolted-on vector DB eats the HBM you bought for inference.", DIM_COLOR),
         ("", None),
         ("# Perseus Vault", TITLE_COLOR),
-        ("  • Single Rust binary · SQLite FTS5 recall · 55 MCP tools", OUTPUT_COLOR),
+        ("  • Single Rust binary · SQLite FTS5 recall · 56 MCP tools", OUTPUT_COLOR),
         ("  • Memory lives on the host CPU — 0 bytes of GPU HBM", OUTPUT_COLOR),
         ("", None),
         ("  Two markets: teams bleeding tokens, + regulated teams", HIGHLIGHT_COLOR),
