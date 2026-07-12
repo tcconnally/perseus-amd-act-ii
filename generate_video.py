@@ -158,18 +158,19 @@ scenes = [
         ("  BM25 + recency over SQLite FTS5 — on the HOST CPU,", DIM_COLOR),
         ("  0 bytes of GPU HBM.  Reproduce: python src/benchmark.py", DIM_COLOR),
     ]),
-    # 6 — cost economics — MEASURED on BOTH vendors (§3a MI300X + §3b 2×H100)
-    dict(badge="data_source: measured (MI300X + 2xH100, same model, same vLLM)", lines=[
-        ("# Cost economics — measured on BOTH vendors", TITLE_COLOR),
-        ("", None),
+    # 6 — cost economics — MEASURED on EVERY platform (§3a/§3b/§3c/§3d)
+    dict(badge="data_source: measured (MI300X + 2xA100 + 2xH100 + 8xA100 — no projections)", lines=[
+        ("# Cost economics — every row measured", TITLE_COLOR),
         ("  Qwen2.5-72B bf16 · vLLM 0.19.1 · 8K-token agents", DIM_COLOR),
         ("", None),
-        ("  1x MI300X     holds it, 38 GiB spare   15.3 agents   $0.143/agent-hr", (120, 255, 160)),
-        ("  1x H100       CANNOT LOAD THE MODEL      —              —", OUTPUT_COLOR),
-        ("  2x H100       best case (eager, 97%)    5.0 agents   $1.68/agent-hr", OUTPUT_COLOR),
+        ("  Platform      GPUs  config        agents   $/agent-hr", DIM_COLOR),
+        ("  1x MI300X       1   standard       15.3     $0.143", (120, 255, 160)),
+        ("  2x A100 80GB    2   eager@0.97      6.37     $0.436", OUTPUT_COLOR),
+        ("  2x H100         2   eager@0.97      5.0      $1.68", OUTPUT_COLOR),
+        ("  8x A100 40GB    8   standard        57.9     $0.275", OUTPUT_COLOR),
         ("", None),
-        (">>> 11.7x cheaper per agent — measured, not projected", HIGHLIGHT_COLOR),
-        ("  ($0.92 vs $3.42 per 1M output tokens · A100 row remains projection)", DIM_COLOR),
+        (">>> MI300X wins on ONE card: 3.0x vs 2xA100-80, 11.7x vs 2xH100", HIGHLIGHT_COLOR),
+        ("  ($0.92/1M output tok · every row measured — not one projection left)", DIM_COLOR),
     ]),
     # 7 — closing
     dict(lines=[
@@ -178,8 +179,8 @@ scenes = [
         ("", None),
         ("  github.com/tcconnally/perseus-amd-act-ii", HIGHLIGHT_COLOR),
         ("", None),
-        ("  Agents, $/agent-hr, recall-under-load, and the 2xH100", (255, 140, 90)),
-        ("  comparison = ALL MEASURED.  Reproduce: src/amd_live_benchmark.py", (255, 140, 90)),
+        ("  Concurrency, $/agent-hr, recall-under-load, and the A100 + H100", (255, 140, 90)),
+        ("  comparisons = ALL MEASURED, no projections.  Reproduce: src/amd_live_benchmark.py", (255, 140, 90)),
     ]),
 ]
 

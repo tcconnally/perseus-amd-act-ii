@@ -32,15 +32,17 @@ NARRATION = [
     "Recall scales, too. On an AMD CPU reference build, one hundred thousand memories "
     "recall near twelve milliseconds, the whole store just twenty six megabytes on "
     "disk, on the host, not in GPU memory. Measured, not projected.",
-    # Scene 6 (cost) — MEASURED on BOTH vendors (§3a MI300X + §3b 2×H100)
-    "The economics, measured on both sides. One M I 300 X holds fifteen point three "
-    "concurrent seventy two B agents at fourteen cents per agent hour. We rented two "
-    "H 100s and ran the same model, same V L L M: a single H 100 cannot load it at "
-    "all, and the pair's best case is five agents at a dollar sixty eight. That is "
-    "eleven point seven times cheaper per agent on the M I 300 X. Measured, not "
-    "projected. Perseus Vault's memory stays on the CPU, using none of that HBM.",
+    # Scene 6 (cost) — MEASURED on EVERY platform (§3a MI300X, §3b 2×H100, §3c 2×A100-80, §3d 8×A100-40)
+    "The economics, measured on every platform — not one projection. One M I 300 X "
+    "holds fifteen point three concurrent seventy two B agents at fourteen cents per "
+    "agent hour. Two A 100 eighty gigs, same config, serve six point four agents at "
+    "forty four cents. Two H 100s, best case, five agents at a dollar sixty eight. "
+    "Even eight A 100s land at twenty seven cents. On a single card, the M I 300 X is "
+    "three times cheaper than the A 100 pair and eleven point seven times cheaper than "
+    "the H 100 pair. Every number measured on real rented hardware. Perseus Vault's "
+    "memory stays on the CPU, using none of that HBM.",
     # Scene 7 (closing)
     "Perseus Vault, on AMD Instinct. Concurrency, cost per agent hour, recall under "
-    "load, and the two H 100 comparison are all measured, and all reproduce from the "
-    "repository below with one command.",
+    "load, and the A 100 and H 100 comparisons are all measured — not one projection — "
+    "and all reproduce from the repository below with one command.",
 ]
