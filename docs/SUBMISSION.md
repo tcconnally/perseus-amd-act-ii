@@ -78,8 +78,9 @@ the demo prints that warning on every run.
   MI300X's 15.3 at $0.143 — **11.7× measured-vs-measured, vs 2× H100** (and $3.42 vs
   $0.92 per 1M output tokens). We also rented and measured **8× A100 40GB** (57.9 agents,
   $0.275/agent-hr — but 8 cards vs 1, so MI300X still wins 1.9×). Perseus Vault memory
-  costs ~$0.0004/agent-hour on the CPU and consumes 0 bytes of HBM. (Only the **2× A100
-  80GB** row remains a projection; a measured run is in progress.)
+  costs ~$0.0004/agent-hour on the CPU and consumes 0 bytes of HBM. (We also measured
+  **2× A100 80GB** at the identical eager@0.97 config — 6.37 agents, $0.436/agent-hr,
+  MI300X 3.0× cheaper. **Every cross-vendor row is now measured — no projection left.**)
 
 **Why it's a Unicorn.** Agent memory is a real, growing market (Mem0, Letta, Zep) — but
 every incumbent is cloud- or vector-DB-bound. Perseus Vault is the only memory engine
@@ -192,8 +193,9 @@ Perseus Computing LLC (Wyoming)
    H100 can't load the model, the pair's best case is 5.0 agents at $1.68/agent-hr →
    11.7× measured-vs-measured, vs 2× H100; PLUS a measured 8× A100 40GB baseline —
    57.9 agents at $0.275/agent-hr, still 1.9× costlier than the MI300X). Next: FP8/AITER
-   tuning to push the measured $/token floor down, and a 2× A100 80GB run to retire the
-   last projection row (in progress).
+   tuning to push the measured $/token floor down. (The 2× A100 80GB run has since landed
+   — 6.37 agents, $0.436/agent-hr at eager@0.97 — retiring the last projection row; every
+   cross-vendor number is now measured.)
 2. Ship a ready-to-deploy "MI300X + Perseus Vault" agent memory reference stack
    (compose file + vLLM/ROCm serving + N per-agent encrypted stores).
 3. Prototype an optional ROCm/HIP dense re-rank offload for hybrid recall and quantify

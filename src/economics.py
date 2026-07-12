@@ -14,8 +14,9 @@ We then rented 2x NVIDIA H100 SXM and measured the cross-vendor claim too: a sin
 H100 cannot load the model; the pair's best-boot case serves 5.0 agents at
 $1.68/agent-hour -> 11.7x measured-vs-measured (§3b; the ~7.8x projection below
 UNDERSTATED the advantage). We also rented and measured 8x A100 40GB (§3d): 57.9 agents
-at $0.275/agent-hr — 8 cards vs 1, so MI300X still wins 1.9x. Only the 2x A100 80GB row
-remains a projection (measured run in progress).
+at $0.275/agent-hr — 8 cards vs 1, so MI300X still wins 1.9x. And 2x A100 80GB (§3c,
+eager@0.97): 6.37 agents / $0.436 (MI300X 3.0x cheaper). EVERY cross-vendor row is now
+measured — no projection remains.
 The thesis this module quantifies is deliberately CPU-side and therefore honest:
 Perseus Vault keeps the agent memory layer OFF the GPU, so 100% of an accelerator's
 HBM and FLOPs go to inference while durable memory is served for cents on the host
@@ -54,7 +55,7 @@ CONTEXT_TOKENS = 8192
 # --- MEASURED deployment (2026-07-09, Qwen2.5-72B-Instruct bf16, vLLM 0.19.1) ---
 # The live cost table below is MEASURED on real rented hardware, not projected:
 # one AMD Instinct MI300X (§3a) and one 2x NVIDIA H100 SXM pair (§3b) in
-# docs/BENCHMARKS.md, plus 8x A100 40GB (§3d). Only the 2x A100 80GB row remains a projection.
+# docs/BENCHMARKS.md, plus 8x A100 40GB (§3d) and 2x A100 80GB (§3c). Every row is measured.
 MEASURED_MODEL_NAME = "Qwen2.5-72B-Instruct (bf16)"
 MEASURED_WEIGHTS_GB = 135.5     # measured on GPU (vLLM)
 # KV cache per token for Llama-3.1-70B with GQA (80 layers, 8 KV heads, head_dim 128,
@@ -117,9 +118,9 @@ def economics_rows():
 
     MI300X, both H100 rows, and the 8x A100 40GB row are MEASURED on real rented
     hardware (Qwen2.5-72B-Instruct bf16, vLLM 0.19.1 — docs/BENCHMARKS.md §3a/§3b/§3d).
-    Only the 2x A100 80GB row is a projection (measured run in progress).
-    ``concurrent_agents`` is None when the deployment cannot even load the model
-    (1x H100 → CUDA OOM).
+    The 2x A100 80GB row is now measured too (eager@0.97, matches 2x H100). Every
+    cross-vendor row is measured — no projection remains. ``concurrent_agents`` is
+    None when the deployment cannot even load the model (1x H100 → CUDA OOM).
     """
     pv = round(perseus_vault_cost_per_agent_hr(), 5)
 
@@ -149,16 +150,15 @@ def economics_rows():
     # 72B (~136 GB), so huge KV headroom → high per-agent count, but it's 8 cards vs 1.
     yield row("NVIDIA A100 40GB SXM4 (8 cards)", 40.0, 8, 57.9, 15.92, 0.275,
               "measured", "8 cards, 320 GB — overprovisioned; 7.2 agents/card")
-    # 2x A100 80GB — projection only (measured run in progress); datasheet + price list.
-    n, agents, cost, per_agent = agents_per_deployment(A100_80)
-    yield row(A100_80.name, A100_80.hbm_gb, n, round(agents, 1), round(cost, 2),
-              (round(per_agent, 3) if per_agent != float("inf") else None),
-              "projection", "2x A100 80GB not yet rented — measured run in progress")
+    # 2x A100 80GB — MEASURED on RunPod (§3c), eager@0.97 to match the 2x H100 best-case
+    # (projection was 7.6 agents / $0.474 — validated: measured 6.37 / $0.436).
+    yield row("NVIDIA A100 80GB SXM4 (2 cards)", 80.0, 2, 6.37, 2.78, 0.436,
+              "measured", "eager@0.97, matches 2x H100 methodology")
 
 
 if __name__ == "__main__":
     print(f"Live table model: {MEASURED_MODEL_NAME}  weights={MEASURED_WEIGHTS_GB} GB "
-          f"[measured: MI300X + 2xH100 + 8xA100 40GB; 2xA100 80GB row = projection]")
+          f"[measured: MI300X + 2xH100 + 8xA100 40GB + 2xA100 80GB — no projection rows]")
     print(f"Projection model:  {MODEL_NAME}  weights={MODEL_WEIGHTS_GB} GB  "
           f"ctx={CONTEXT_TOKENS}  KV/seq={KV_GB_PER_SEQ:.2f} GB")
     print(f"Perseus Vault memory: {PV_RSS_MB_PER_AGENT} MB RSS / agent  "

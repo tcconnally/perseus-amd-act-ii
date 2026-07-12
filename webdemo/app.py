@@ -13,7 +13,7 @@ can, in their browser:
 Everything here runs on the host CPU — 0 bytes of GPU HBM — which is the whole AMD
 economics argument. The cost table shown alongside is now MEASURED on real rented
 hardware (one MI300X + one 2x H100 pair, Qwen2.5-72B via vLLM — docs/BENCHMARKS.md
-§3a/§3b/§3d); only the 2× A100 80GB row remains a projection, labelled as such.
+§3a/§3b/§3c/§3d) — every cross-vendor row is measured, no projection remains.
 
 Guardrails for a public demo: each visitor gets an isolated in-memory store keyed by
 a cookie; stores are capped, rate-limited, and auto-evicted when idle.
@@ -327,7 +327,7 @@ INDEX_HTML = r"""<!doctype html>
      AMD</a> to serve on Instinct; no serving API attests which accelerator handles a request, so we
      don't claim one. (Daily budget cap; falls back to a labelled memory-grounded composition.) The
      cost table below is <b>measured</b> on real rented hardware — one MI300X and one 2×H100 pair
-     and 8× A100 40GB (Qwen2.5-72B, vLLM); only the 2× A100 80GB row is a projection.</div>
+     2× A100 80GB, and 8× A100 40GB (Qwen2.5-72B, vLLM) — every row measured, no projection.</div>
 
   <div class="grid">
     <div class="card">
@@ -354,7 +354,7 @@ INDEX_HTML = r"""<!doctype html>
   </div>
 
   <div class="card" style="margin-top:16px">
-    <h2>Why AMD: one card, many agents <span class="pill gpu0">measured · MI300X + 2×H100 + 8×A100</span></h2>
+    <h2>Why AMD: one card, many agents <span class="pill gpu0">measured · MI300X + 2×A100 + 2×H100 + 8×A100</span></h2>
     <p class="hint" id="econhint">serving one 72B model; memory stays on CPU (0 HBM).</p>
     <table id="econ"><thead><tr><th>Accelerator</th><th>HBM</th><th>Cards</th>
       <th>Agents</th><th>$/GPU-hr</th><th>$/agent-hr</th><th>source</th></tr></thead><tbody></tbody></table>

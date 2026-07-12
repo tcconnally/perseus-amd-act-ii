@@ -3,11 +3,11 @@
 > **WARNING — read this first.** Every number below is tagged with a `data_source`:
 > **`measured`** (timed live, reproducible), **`published-spec`** (vendor datasheet /
 > cloud price list, cited), or **`projection`** (derived from published-spec inputs
-> with stated assumptions). We rented a real **AMD Instinct MI300X**, a real
-> **2× NVIDIA H100 SXM**, and a real **8× NVIDIA A100 40 GB** and measured the
-> load-bearing claims ourselves (§1, §3a, §3b, §3d). The **2× A100 80 GB** comparison
-> in §3c remains a `projection`, labelled as such; a **4× A100 40 GB** apples-to-apples
-> run is in progress. See [§4](#4-what-we-measured-on-real-amd-hardware--and-whats-next).
+> with stated assumptions). We rented and measured every cross-vendor row ourselves on
+> real hardware: **AMD Instinct MI300X** (§3a), **2× NVIDIA H100 SXM** (§3b),
+> **2× A100 80 GB** (§3c, eager@0.97 matching the H100), and **8× A100 40 GB** (§3d).
+> **No projection row remains** — the earlier A100 projection was validated by measurement
+> (§3c). See [§4](#4-what-we-measured-on-real-amd-hardware--and-whats-next).
 
 Reproduce §1–§2 yourself: `python3 src/benchmark.py` (add `--quick` to skip 100K).
 
@@ -76,8 +76,8 @@ recall and recall does not slow the accelerator — the two never contend. Repro
 it isolates the "does CPU memory work contend with a busy GPU?" question (answer: no).
 We have since repeated the measurement under a **real vLLM serving load** (Qwen2.5-72B)
 with the same result — see [§3a](#3a-measured-on-a-real-mi300x--data_source-measured).
-The cross-vendor `$/agent-hour` comparison is now **measured too** (§3b, 2×H100);
-only the A100 row remains a `projection`.*
+The cross-vendor `$/agent-hour` comparison is now **measured on every platform**
+(§3b 2×H100, §3c 2×A100 80GB, §3d 8×A100 40GB) — no projection row remains.*
 
 ---
 
@@ -224,11 +224,28 @@ is faster; if fleet capacity per dollar is (the agent-fleet case), the MI300X wi
 projection *understated* the MI300X advantage, because it didn't model the H100's
 graph-capture overhead and activation headroom. Every row reproduces from the repo.
 
-### 3c. Cross-accelerator projection (A100) — `data_source: projection`
+### 3c. Cross-accelerator: 2× A100 80GB — `data_source: measured` (projection validated)
 
-*(The A100 row below remains a projection — we rented MI300X and H100, not A100.)*
+We **rented and measured 2× A100 80GB SXM4** (RunPod, $2.78/hr, 2026-07-12) at the
+**identical `--enforce-eager --gpu-memory-utilization 0.97` config as the 2× H100 §3b**
+(the fair 160 GB apples-to-apples), same model + vLLM 0.19.1:
 
-**Inputs (`published-spec`, cited in the README):**
+| Metric | Measured | `data_source` |
+|---|---|---|
+| **Concurrent 8K agents** | **6.37** | measured (vLLM: "Maximum concurrency for 8,192 tokens per request: 6.37x") |
+| **GPU $/agent-hour** | **$0.436** | $2.78 ÷ 6.37 |
+| Sustained output throughput | 746 tok/s | measured |
+| **$ / 1M output tokens** | **~$1.04** | measured throughput × rental price |
+
+**The projection below was validated:** it projected 7.6 agents / $0.474/agent-hr; we
+**measured 6.37 / $0.436** — close, and slightly *better* on cost. On the same 160 GB
+budget the 2× A100 80GB (6.37) edges the 2× H100 (5.0) on agent count and is far cheaper
+per agent ($0.436 vs $1.68, because A100 rental is ~3× cheaper). **The MI300X still wins:
+$0.143 vs $0.436 = 3.0× cheaper per agent-hour**, on one card vs two. (First A100 attempt
+ran standard config → 2.62 agents; standard leaves less KV once CUDA graphs are captured,
+so we report the eager@0.97 best-case that matches the H100 methodology.)
+
+**Inputs (`published-spec`, cited in the README) — the model this measurement validated:**
 
 | Accelerator | HBM | Bandwidth | FP16 (peak) | TDP | Cloud $/hr (2026) |
 |---|---|---|---|---|---|
@@ -250,7 +267,8 @@ the host CPU and consumes **0 bytes of HBM**.
 **Takeaway:** the projection said **~7.8× cheaper than 2×H100** — the §3b
 **measurement came in at 11.7×** (the projection understated the MI300X advantage;
 it didn't model the H100's graph-capture overhead and activation headroom). The
-A100 comparison (~3.6×) remains a `projection`. Perseus Vault keeps memory on the
+A100 comparison projected ~3.6× and **measured 3.0×** (§3c above — projection validated).
+Perseus Vault keeps memory on the
 CPU (~$0.0004/agent-hr, **~0.3% of the agent's hourly cost**), so none of that
 192 GB is wasted storing what the agent knows instead of serving tokens.
 
@@ -286,9 +304,9 @@ MI300X's one**: the single MI300X still wins **~1.9× on $/agent-hour** ($0.143 
 and **~2.1× per card** (15.3 concurrent agents on one card vs 7.2/card here). The
 11.7× headline (§3b) is specifically **vs 2× H100**, not vs this 8-card A100 box. The
 load-bearing claim is unchanged on either vendor: Perseus Vault memory stays on the host
-CPU and consumes **0 bytes of HBM**. This is a measured **8×** datapoint; the **2× A100
-80 GB** row in §3c remains a `projection`, and a **4× A100 40 GB** (160 GB — the true
-apples-to-apples match for the 2× H100 memory budget) run is in progress.
+CPU and consumes **0 bytes of HBM**. This is a measured **8×** datapoint; the
+apples-to-apples 160 GB comparison is the **2× A100 80 GB** row (§3c, measured: 6.37
+agents at $0.436/agent-hr), which retired the last projection.
 
 Reproduce: `vllm serve Qwen/Qwen2.5-72B-Instruct --tensor-parallel-size 8 --max-model-len
 8192 --gpu-memory-utilization 0.92`, read the KV-cache concurrency line, then
