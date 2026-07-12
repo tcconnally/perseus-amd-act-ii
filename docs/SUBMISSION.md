@@ -75,9 +75,11 @@ the demo prints that warning on every run.
 - *Measured cross-vendor (2× H100 SXM rented, same model + vLLM version):* a single
   H100 **cannot load** the 72B at all; the pair, at its best-boot config (97% util,
   eager-only), serves **5.0 concurrent 8K agents at $1.68/agent-hour** vs the
-  MI300X's 15.3 at $0.143 — **11.7× measured-vs-measured** (and $3.42 vs $0.92 per
-  1M output tokens). Perseus Vault memory costs ~$0.0004/agent-hour on the CPU and
-  consumes 0 bytes of HBM. (Only the A100 row remains a projection.)
+  MI300X's 15.3 at $0.143 — **11.7× measured-vs-measured, vs 2× H100** (and $3.42 vs
+  $0.92 per 1M output tokens). We also rented and measured **8× A100 40GB** (57.9 agents,
+  $0.275/agent-hr — but 8 cards vs 1, so MI300X still wins 1.9×). Perseus Vault memory
+  costs ~$0.0004/agent-hour on the CPU and consumes 0 bytes of HBM. (Only the **2× A100
+  80GB** row remains a projection; a measured run is in progress.)
 
 **Why it's a Unicorn.** Agent memory is a real, growing market (Mem0, Letta, Zep) — but
 every incumbent is cloud- or vector-DB-bound. Perseus Vault is the only memory engine
@@ -188,8 +190,10 @@ Perseus Computing LLC (Wyoming)
    $0.143/agent-hour; sustained 658 output tok/s / peak 1,088 → $0.92 per 1M output
    tokens at retail rental, untuned bf16; PLUS a measured 2×H100 baseline — single
    H100 can't load the model, the pair's best case is 5.0 agents at $1.68/agent-hr →
-   11.7× measured-vs-measured). Next: FP8/AITER tuning to push the measured $/token
-   floor down, and an A100 baseline to retire the last projection row.
+   11.7× measured-vs-measured, vs 2× H100; PLUS a measured 8× A100 40GB baseline —
+   57.9 agents at $0.275/agent-hr, still 1.9× costlier than the MI300X). Next: FP8/AITER
+   tuning to push the measured $/token floor down, and a 2× A100 80GB run to retire the
+   last projection row (in progress).
 2. Ship a ready-to-deploy "MI300X + Perseus Vault" agent memory reference stack
    (compose file + vLLM/ROCm serving + N per-agent encrypted stores).
 3. Prototype an optional ROCm/HIP dense re-rank offload for hybrid recall and quantify

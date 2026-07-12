@@ -47,8 +47,10 @@ and the MCP registry), not a weekend build. lablab project:
 > ([BENCHMARKS §3a](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)).
 > We then rented **2× H100 SXM** and measured the cross-vendor claim too: best-case
 > 5.0 concurrent agents at $1.68/agent-hr vs the MI300X's 15.3 at $0.143 —
-> **11.7× measured-vs-measured** (a single H100 cannot load the model at all). Only
-> the A100 row remains a `projection`. Every number in this repo is tagged with a `data_source`:
+> **11.7× measured-vs-measured, vs 2× H100** (a single H100 cannot load the model at all).
+> We also rented and measured **8× A100 40GB** (57.9 agents, $0.275/agent-hr — but that's
+> 8 cards to the MI300X's 1, so MI300X still wins 1.9× on $/agent-hr and 2.1× per card);
+> only the **2× A100 80GB** row remains a `projection`. Every number is tagged `data_source`:
 > **`measured`** (timed live, reproducible now), **`published-spec`** (vendor
 > datasheet / cloud price list, cited below), or **`projection`** (derived from
 > published-spec inputs with stated assumptions). **No projected number is presented
@@ -152,18 +154,22 @@ bi-temporal `as_of` **~0.1 ms flat**; bulk insert **98,732 entities/s**.
 **Measured on both sides (2026-07-09, same model, same vLLM 0.19.1, n=3 medians —
 [BENCHMARKS §3a–3b](docs/BENCHMARKS.md#3a-measured-on-a-real-mi300x--data_source-measured)):**
 
-| Serving Qwen2.5-72B bf16 | 1× MI300X | 2× H100 SXM (best case) |
-|---|---|---|
-| Holds the model | ✅ one card, 38 GiB KV spare | ❌ one card **can't load it**; two required |
-| Concurrent 8K agents | **15.3** (standard settings) | **5.0** (eager-only, 97% util redline) |
-| **GPU $/agent-hour** | **$0.143** | **$1.68** |
-| $ / 1M output tokens | **$0.92** | $3.42 |
+| Serving Qwen2.5-72B bf16 | 1× MI300X | 2× H100 SXM (best case) | 8× A100 40GB |
+|---|---|---|---|
+| GPUs | **1** | 2 | 8 |
+| Holds the model | ✅ one card, 38 GiB KV spare | ❌ one card **can't load it**; two required | ✅ (320 GB, heavily overprovisioned) |
+| Concurrent 8K agents | **15.3** (standard settings) | **5.0** (eager-only, 97% util redline) | **57.9** (7.2/card) |
+| **GPU $/agent-hour** | **$0.143** | **$1.68** | **$0.275** |
+| $ / 1M output tokens | **$0.92** | $3.42 | $1.92 |
 
-**11.7× lower $/agent-hour and 3.7× lower $/token — measured, not projected.** At the
-*identical* configuration the H100 pair serves **zero** 8K requests (KV exhausted); its
-5.0 figure is the best case that boots. (H100 does win per-stream decode latency, 39 vs
-83 ms TPOT — stated plainly.) The A100 row of the old comparison remains a `projection`
-(~$0.47/agent-hr; we did not rent A100s). Perseus Vault memory runs on the CPU
+**11.7× lower $/agent-hour and 3.7× lower $/token vs 2× H100 — measured, not projected.**
+At the *identical* configuration the H100 pair serves **zero** 8K requests (KV exhausted);
+its 5.0 figure is the best case that boots. (H100 does win per-stream decode latency, 39 vs
+83 ms TPOT — stated plainly.) We also **rented and measured 8× A100 40GB** (Lambda):
+57.9 concurrent agents at **$0.275/agent-hr** — but that is eight cards to the MI300X's one,
+so per-card the MI300X still leads (15.3 vs 7.2 agents/card) and wins **1.9×** on
+$/agent-hour. The **2× A100 80GB** config remains a `projection` (~$0.47/agent-hr; measured
+run in progress). Perseus Vault memory runs on the CPU
 (~$0.0004/agent-hr ≈ 0.3% of the agent's cost) and uses **0 bytes of HBM**. Reproduce:
 `python3 src/economics.py` (projection model) + [BENCHMARKS §3a–3b](docs/BENCHMARKS.md)
 (measured runs, exact commands).

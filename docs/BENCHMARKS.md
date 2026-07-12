@@ -3,10 +3,11 @@
 > **WARNING — read this first.** Every number below is tagged with a `data_source`:
 > **`measured`** (timed live, reproducible), **`published-spec`** (vendor datasheet /
 > cloud price list, cited), or **`projection`** (derived from published-spec inputs
-> with stated assumptions). We rented a real **AMD Instinct MI300X** and a real
-> **2× NVIDIA H100 SXM** and measured the load-bearing claims on both sides ourselves
-> (§1, §3a, §3b). Only the A100 row remains `published-spec`/`projection`, labelled
-> as such. See [§4](#4-what-we-measured-on-real-amd-hardware--and-whats-next).
+> with stated assumptions). We rented a real **AMD Instinct MI300X**, a real
+> **2× NVIDIA H100 SXM**, and a real **8× NVIDIA A100 40 GB** and measured the
+> load-bearing claims ourselves (§1, §3a, §3b, §3d). The **2× A100 80 GB** comparison
+> in §3c remains a `projection`, labelled as such; a **4× A100 40 GB** apples-to-apples
+> run is in progress. See [§4](#4-what-we-measured-on-real-amd-hardware--and-whats-next).
 
 Reproduce §1–§2 yourself: `python3 src/benchmark.py` (add `--quick` to skip 100K).
 
@@ -263,6 +264,35 @@ CPU (~$0.0004/agent-hr, **~0.3% of the agent's hourly cost**), so none of that
 > Perseus Vault memory stays on the CPU and consumes **0 bytes of HBM**.
 
 Reproduce the model: `python3 src/economics.py`.
+
+### 3d. Measured on real A100 (8× A100 40 GB) — `data_source: measured`
+
+We rented **8× NVIDIA A100 40 GB SXM4** (Lambda, us-east-1, $15.92/hr) and ran the
+**same model, same vLLM 0.19.1, same methodology** as §3a/§3b. Measured 2026-07-11:
+
+| Metric | Measured | `data_source` |
+|---|---|---|
+| Config that boots | standard (CUDA graphs on; no `--enforce-eager` needed) | measured |
+| **Concurrent 8K agents / instance** | **57.93** | measured (vLLM: "Maximum concurrency for 8,192 tokens per request: 57.93x") |
+| **GPU $/agent-hour** | **$0.275** | measured price ÷ measured ceiling ($15.92 ÷ 57.93) |
+| Sustained output throughput | **2,304 tok/s** | measured |
+| **$ / 1M output tokens** | **$1.92** | measured throughput × rental price |
+| Per-card concurrency | **7.2 agents/card** (57.93 ÷ 8) | derived from measured |
+
+**Read this honestly — it is 8 cards, not one.** 8× A100 40 GB is 320 GB of HBM serving a
+72B that needs ~136 GB, so the spare HBM becomes KV cache and the per-*agent* cost looks
+strong ($0.275, well under the 2× H100's $1.68). But this is **eight GPUs against the
+MI300X's one**: the single MI300X still wins **~1.9× on $/agent-hour** ($0.143 vs $0.275)
+and **~2.1× per card** (15.3 concurrent agents on one card vs 7.2/card here). The
+11.7× headline (§3b) is specifically **vs 2× H100**, not vs this 8-card A100 box. The
+load-bearing claim is unchanged on either vendor: Perseus Vault memory stays on the host
+CPU and consumes **0 bytes of HBM**. This is a measured **8×** datapoint; the **2× A100
+80 GB** row in §3c remains a `projection`, and a **4× A100 40 GB** (160 GB — the true
+apples-to-apples match for the 2× H100 memory budget) run is in progress.
+
+Reproduce: `vllm serve Qwen/Qwen2.5-72B-Instruct --tensor-parallel-size 8 --max-model-len
+8192 --gpu-memory-utilization 0.92`, read the KV-cache concurrency line, then
+`python3 src/amd_live_benchmark.py --base-url http://localhost:8000 --gpu-price 15.92`.
 
 ---
 
